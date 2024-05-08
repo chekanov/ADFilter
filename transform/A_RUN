@@ -1,0 +1,46 @@
+#!/bin/bash
+# S.Chekanov (ANL)
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+echo "Process Keras with ATLAS  https://arxiv.org/abs/2307.01612"
+echo "Script location $SCRIPT_DIR"
+
+INPUT=$1
+CONFIG=0
+
+if [ "$#" -eq 2 ]; then
+        CONFIG=$2
+        echo "Configuration number was set to $CONFIG"
+fi
+
+if [ "$#" -ne 2 ]; then
+        echo "Configuration number was set to the default $CONFIG"
+fi
+
+
+my_extension="${INPUT##*.}"
+
+
+echo "Input file=$INPUT"
+
+RMM_INPUT=$INPUT.root
+
+if [ "$my_extension" = "promc" ]; then
+  cd $SCRIPT_DIR/Map2RMM/
+  $SCRIPT_DIR/Map2RMM/ARUN $INPUT $CONFIG 
+fi
+
+if [ "$my_extension" =  "root" ]; then
+ cd $SCRIPT_DIR/Map2RMM_delphes/
+  $SCRIPT_DIR/Map2RMM_delphes/ARUN $INPUT $CONFIG 
+  secondString="_root"
+  OUTPUT="${INPUT/.root/"$secondString"}"
+  RMM_INPUT=$OUTPUT.root
+fi
+
+
+cd $SCRIPT_DIR 
+echo "Process $INPUT.root with Keras.."
+$SCRIPT_DIR/A_RUN_ANALYSIS_10PB $RMM_INPUT $CONFIG
+ 

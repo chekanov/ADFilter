@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+CURRENT_DIR=`pwd`
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+echo "Process slimmed Delphes -> ROOT from $SCRIPT_DIR"
+
+source $SCRIPT_DIR/setup_lcg.sh
+
+export LD_LIBRARY_PATH=$FASTJET/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=./map2rmm/lib/:$LD_LIBRARY_PATH
+
+INPUT=$1
+CONFIG=0
+
+if [ "$#" -eq 2 ]; then
+        CONFIG=$2
+    	echo "Configuration number was set to $CONFIG" 
+fi
+
+if [ "$#" -ne 2 ]; then
+        echo "Configuration number was set to the default $CONFIG"
+fi
+
+
+secondString="_root"
+OUTPUT="${INPUT/.root/"$secondString"}"
+
+
+echo "Input for Map2RMM= $INPUT"
+echo "Output from Map2RMM= $OUTPUT.root"
+
+# Directory with ProMC files from HepSim 
+# Make_input data
+# echo $INPUT > $SCRIPT_DIR/data.in 
+
+$SCRIPT_DIR/example "$INPUT" "$OUTPUT.root" $CONFIG
+

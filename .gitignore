@@ -1,1 +1,7 @@
+*_dict.cxx
+*.so
+*.pcm
+*.a
+*~
+*.pyc
 *.o

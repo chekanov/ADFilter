@@ -1,0 +1,58 @@
+#!/bin/bash
+# S.Chekanov (ANL)
+
+# source ./setup_lxplus.sh
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+source $SCRIPT_DIR/Map2RMM/setup_lcg.sh
+#source $SCRIPT_DIR/setup_lxplus.sh
+
+INPUT=$1
+
+CONFIG=0
+
+if [ "$#" -eq 2 ]; then
+        CONFIG=$2
+        echo "Configuration number was set to $CONFIG"
+fi
+
+if [ "$#" -ne 2 ]; then
+        echo "Configuration number was set to the default $CONFIG"
+fi
+
+
+# working point 10 PB
+WORKING_POINT=10
+
+# trained ANN with 1% of data 
+# model=data1percent
+
+# Nr of events or -1
+# nevents=50000 
+nevents=-1
+
+echo "Keras analyses: $INPUT"
+
+echo "Process 100%"
+
+if [ "$CONFIG" -eq 0 ]; then
+        CONFIG=$2
+        echo "ATLAS PRL single lepton configuration for Run2"
+        SCRIPT="$SCRIPT_DIR/analysis_root_chunky.py"
+        model="median"
+	python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT}
+fi
+
+
+if [ "$CONFIG" -gt 0 ]; then
+        CONFIG=$2
+        echo "Multi-trigger configuration for Run2+Run3"
+        SCRIPT="$SCRIPT_DIR/analysis_root_chunky_multitriggers.py"
+        TYPE=$CONFIG
+        # one-hot 
+        NN_TYPE="HAE_RUN23"
+        model="nominal"
+	python $SCRIPT $model $nevents $INPUT  "data100percent" ${TYPE} ${NN_TYPE} ${WORKING_POINT}
+fi
+
+
