@@ -54,6 +54,36 @@ float**  projectevent(const float  CMS, const int maxN, const int maxNumberTypes
                       const vector<LParticle> photons);
 
 
+// find all files inside a directory
+std::vector<std::string> open(std::string name = "data.in") {
+	vector<std::string> ntup;
+	ifstream myfile;
+	myfile.open(name.c_str(), ios::in);
+
+	if (!myfile) {
+		cerr << " -> Can't open input file:  " << name << endl;
+		exit(1);
+	} else {
+		cout << "-> Read data file=" << name << endl;
+	}
+
+	string temp;
+	while (myfile >> temp) {
+		//the following line trims white space from the beginning of the string
+		temp.erase(temp.begin(), std::find_if(temp.begin(), temp.end(), not1(ptr_fun<int, int>(isspace))));
+		if (temp.find("#") == 0) continue;
+		ntup.push_back(temp);
+	}
+	cout << "-> Number of files=" << ntup.size()  << endl;
+	myfile.close();
+
+	for (unsigned int i=0; i<ntup.size(); i++) {
+		cout << ".. file to analyse="+ntup[i] << endl;
+	}
+	return ntup;
+}
+
+
 // main example
 int main(int argc, char **argv)
 {
@@ -142,7 +172,6 @@ if (argc != 4) {
 	int nfiles=0; // total files
 	double weight=1.0;
 
-
 	// get input list 
 	std::vector<std::string> files;
         files.push_back( string(argv[1]));
@@ -150,9 +179,7 @@ if (argc != 4) {
 	// output
         TFile * RootFile = new TFile(argv[2], "RECREATE", "Histogram file");
 	TH1D * h_debug = new TH1D("EventFlow", "EventFlow", 10, 0, 10.);
-	TH1D * h_cross = new TH1D("cross", "cross,events,lumi", 5, 0, 5.);
-	TH1D * h_info = new TH1D("dijet_info", "Dijet info", 5, 0, 5.);
-	TH1D * h_n_lepton = new TH1D("lepton_nr", "Nr of leptons",20,0,20);
+	TH1D * h_info = new TH1D("Info", "Info", 10, 0, 10.);
 	TH2D * h_proj = new TH2D("projection", "projection", mSize, 0, (double)(mSize), mSize, 0, (double)mSize);
 	TH2D * h_events = new TH2D("events", "events", mSize, 0, (double)(mSize), mSize, 0, (double)mSize);
 	TProfile2D * h_prof = new TProfile2D("profile", "profile", mSize, 0, (double)(mSize), mSize, 0, (double)mSize, 0, 1000);
@@ -164,14 +191,35 @@ if (argc != 4) {
         TH1D * h_muonN = new TH1D("muonN", "Nr of muons",20,0,20);
         TH1D * h_electronN = new TH1D("electronN", "Nr of electrons",20,0,20);
 
-        TH1D * h_eta_jet = new TH1D("jet_eta", "jet eta", 40, -10, 10);
+        TH1D * h_eta_jet = new TH1D("jet_eta", "jet eta", 40, -5, 5);
         TH1D * h_pt_jet = new TH1D("jet_pt", "pt",100,0,1000);
         TH1D * h_pt_bjet = new TH1D("bjet_pt", "pt",100,0,1000);
-        TH1D * h_eta_bjet = new TH1D("bjet_eta", "bjet eta", 40, -10, 10);
+        TH1D * h_eta_bjet = new TH1D("bjet_eta", "bjet eta", 40, -5, 5);
         TH1D * h_pt_photon = new TH1D("photon_pt", "leading photon pT",100,0,1000);
         TH1D * h_pt_electron = new TH1D("electron_pt", "leading electron pT",100,0,1000);
         TH1D * h_pt_muon = new TH1D("muon_pt", "leading muon pT",100,0,1000);
 
+         h_pt_jet->GetXaxis()->SetTitle("pT [GeV]");
+         h_pt_jet->GetYaxis()->SetTitle("Events");
+         h_pt_bjet->GetXaxis()->SetTitle("pT [GeV]");
+         h_pt_bjet->GetYaxis()->SetTitle("Events");
+	 h_pt_photon->GetXaxis()->SetTitle("pT [GeV]");
+         h_pt_photon->GetYaxis()->SetTitle("Events");
+         h_pt_electron->GetXaxis()->SetTitle("pT [GeV]");
+         h_pt_electron->GetYaxis()->SetTitle("Events");
+         h_pt_muon->GetXaxis()->SetTitle("pT [GeV]");
+         h_pt_muon->GetYaxis()->SetTitle("Events");
+         h_eta_jet->GetXaxis()->SetTitle("Eta");
+         h_eta_jet->GetYaxis()->SetTitle("Events");
+         
+
+	h_info->Fill("IConfig", iconfig);
+        h_info->Fill("PTjet_min", ptJet);
+        h_info->Fill("PTlepton_min", ptLepton);
+        h_info->Fill("PTgamma_min", ptLepton);
+
+        for (int i=0; i<10; i++)
+                  h_info->SetBinError(i,0);
 
 
         // remember which matrix do you fill
@@ -229,6 +277,11 @@ if (argc != 4) {
     }
 
 
+    TH1F* meta = (TH1F*)inputFile.Get("meta");
+    CMS = meta->GetBinContent(1); 
+    cout << "Read CMS energy [GeV] = " << CMS << endl;
+
+
     // Get the TTree from the root file
     TTree* ntuple = dynamic_cast<TTree*>(inputFile.Get("Ntuple"));
     if (!ntuple) {
@@ -238,27 +291,126 @@ if (argc != 4) {
 
     // CM energy in GeV
     Double32_t cmsEnergy;
-    // Create TClonesArrays to store TLorentzVectors
-    TClonesArray* jetArray = nullptr;
-    TClonesArray* bjetArray = nullptr;
-    TClonesArray* electronArray = nullptr;
-    TClonesArray* muonArray = nullptr;
-    TClonesArray* photonArray = nullptr;
-    TClonesArray* metArray = nullptr;
-    std::vector<Double_t>* weightVector = nullptr;
 
-    // Set branch addresses for each TClonesArray
-    ntuple->SetBranchAddress("Jets", &jetArray);
-    ntuple->SetBranchAddress("BJets", &bjetArray);
-    ntuple->SetBranchAddress("Electrons", &electronArray);
-    ntuple->SetBranchAddress("Muons", &muonArray);
-    ntuple->SetBranchAddress("Photons", &photonArray);
-    ntuple->SetBranchAddress("MET", &metArray);
-    ntuple->SetBranchAddress("Weight", &weightVector);
-    ntuple->SetBranchAddress("CMS_Energy", &cmsEnergy);
+
+   // Declaration of leaf types
+   Int_t           JET_n;
+   vector<Double32_t>  *JET_pt;
+   vector<Double32_t>  *JET_eta;
+   vector<Double32_t>  *JET_phi;
+   vector<Double32_t>  *JET_mass;
+   Int_t           bJET_n;
+   vector<Double32_t>  *bJET_pt;
+   vector<Double32_t>  *bJET_eta;
+   vector<Double32_t>  *bJET_phi;
+   vector<Double32_t>  *bJET_mass;
+   Int_t           EL_n;
+   vector<Double32_t>  *EL_pt;
+   vector<Double32_t>  *EL_eta;
+   vector<Double32_t>  *EL_phi;
+   Int_t           MU_n;
+   vector<Double32_t>  *MU_pt;
+   vector<Double32_t>  *MU_eta;
+   vector<Double32_t>  *MU_phi;
+   Int_t           PH_n;
+   vector<Double32_t>  *PH_pt;
+   vector<Double32_t>  *PH_eta;
+   vector<Double32_t>  *PH_phi;
+   vector<Double32_t>  *PH_e;
+   vector<Double32_t>  *MET_eta;
+   vector<Double32_t>  *MET_phi;
+   vector<Double32_t>  *MET_met;
+   vector<Double32_t>  *Evt_Weight;
+
+
+      // List of branches
+   TBranch        *b_JET_n;   //!
+   TBranch        *b_JET_pt;   //!
+   TBranch        *b_JET_eta;   //!
+   TBranch        *b_JET_phi;   //!
+   TBranch        *b_JET_mass;   //!
+   TBranch        *b_bJET_n;   //!
+   TBranch        *b_bJET_pt;   //!
+   TBranch        *b_bJET_eta;   //!
+   TBranch        *b_bJET_phi;   //!
+   TBranch        *b_bJET_mass;   //!
+   TBranch        *b_EL_n;   //!
+   TBranch        *b_EL_pt;   //!
+   TBranch        *b_EL_eta;   //!
+   TBranch        *b_EL_phi;   //!
+   TBranch        *b_MU_n;   //!
+   TBranch        *b_MU_pt;   //!
+   TBranch        *b_MU_eta;   //!
+   TBranch        *b_MU_phi;   //!
+   TBranch        *b_PH_n;   //!
+   TBranch        *b_PH_pt;   //!
+   TBranch        *b_PH_eta;   //!
+   TBranch        *b_PH_phi;   //!
+   TBranch        *b_PH_e;   //!
+   TBranch        *b_MET_eta;   //!
+   TBranch        *b_MET_phi;   //!
+   TBranch        *b_MET_met;   //!
+   TBranch        *b_Evt_Weight;   //!
+
+
+   // Set object pointer
+   JET_pt = 0;
+   JET_eta = 0;
+   JET_phi = 0;
+   JET_mass = 0;
+   bJET_pt = 0;
+   bJET_eta = 0;
+   bJET_phi = 0;
+   bJET_mass = 0;
+   EL_pt = 0;
+   EL_eta = 0;
+   EL_phi = 0;
+   MU_pt = 0;
+   MU_eta = 0;
+   MU_phi = 0;
+   PH_pt = 0;
+   PH_eta = 0;
+   PH_phi = 0;
+   PH_e = 0;
+   MET_eta = 0;
+   MET_phi = 0;
+   MET_met = 0;
+   Evt_Weight = 0;
+
+
+   ntuple->SetBranchAddress("JET_n", &JET_n, &b_JET_n);
+   ntuple->SetBranchAddress("JET_pt", &JET_pt, &b_JET_pt);
+   ntuple->SetBranchAddress("JET_eta", &JET_eta, &b_JET_eta);
+   ntuple->SetBranchAddress("JET_phi", &JET_phi, &b_JET_phi);
+   ntuple->SetBranchAddress("JET_mass", &JET_mass, &b_JET_mass);
+   ntuple->SetBranchAddress("bJET_n", &bJET_n, &b_bJET_n);
+   ntuple->SetBranchAddress("bJET_pt", &bJET_pt, &b_bJET_pt);
+   ntuple->SetBranchAddress("bJET_eta", &bJET_eta, &b_bJET_eta);
+   ntuple->SetBranchAddress("bJET_phi", &bJET_phi, &b_bJET_phi);
+   ntuple->SetBranchAddress("bJET_mass", &bJET_mass, &b_bJET_mass);
+   ntuple->SetBranchAddress("EL_n", &EL_n, &b_EL_n);
+   ntuple->SetBranchAddress("EL_pt", &EL_pt, &b_EL_pt);
+   ntuple->SetBranchAddress("EL_eta", &EL_eta, &b_EL_eta);
+   ntuple->SetBranchAddress("EL_phi", &EL_phi, &b_EL_phi);
+   ntuple->SetBranchAddress("MU_n", &MU_n, &b_MU_n);
+   ntuple->SetBranchAddress("MU_pt", &MU_pt, &b_MU_pt);
+   ntuple->SetBranchAddress("MU_eta", &MU_eta, &b_MU_eta);
+   ntuple->SetBranchAddress("MU_phi", &MU_phi, &b_MU_phi);
+   ntuple->SetBranchAddress("PH_n", &PH_n, &b_PH_n);
+   ntuple->SetBranchAddress("PH_pt", &PH_pt, &b_PH_pt);
+   ntuple->SetBranchAddress("PH_eta", &PH_eta, &b_PH_eta);
+   ntuple->SetBranchAddress("PH_phi", &PH_phi, &b_PH_phi);
+   ntuple->SetBranchAddress("PH_e", &PH_e, &b_PH_e);
+   ntuple->SetBranchAddress("MET_eta", &MET_eta, &b_MET_eta);
+   ntuple->SetBranchAddress("MET_phi", &MET_phi, &b_MET_phi);
+   ntuple->SetBranchAddress("MET_met", &MET_met, &b_MET_met);
+   ntuple->SetBranchAddress("Evt_Weight", &Evt_Weight, &b_Evt_Weight);
 
 
     bool  err_weight=true;
+
+    float nsum=0;
+    float xsum=0;
 
     // Loop over all entries in the TTree
     Long64_t numEntries = ntuple->GetEntries();
@@ -267,12 +419,13 @@ if (argc != 4) {
 
 
         ntot++;
+        h_debug->Fill("Input",1);
 	
-	if (weightVector) {
-            for (size_t j = 0; j < weightVector->size(); ++j) {
+	if (Evt_Weight) {
+            for (size_t j = 0; j < Evt_Weight->size(); ++j) {
                 //std::cout << "  Weight " << j << ": " << (*weightVector)[j] << endl;
 	    }
-            if (weightVector->size()>0)  m_weight = (*weightVector)[0]; 
+            if (Evt_Weight->size()>0)  m_weight = Evt_Weight->at(0); 
             
 	} else {
                 err_weight=true;  
@@ -280,8 +433,6 @@ if (argc != 4) {
                 m_weight =1.0;
 	}
 
-
-	CMS=(float)cmsEnergy;
         if (i%1000 == 0)  std::cout << "Event= " << i << " accepted=" <<   NN << " CMS=" << CMS << std::endl;
         vector<LParticle> jets;
         vector<LParticle> bjets; // jets with b-quarks
@@ -291,106 +442,131 @@ if (argc != 4) {
         vector<LParticle> muons;
         vector<LParticle> photons;
 
-	               
-	                TLorentzVector* met = dynamic_cast<TLorentzVector*>(metArray->At(0));
-                        // missing
+
+	double  met_pt=0;
+	double  met_phi=0;
+        for (unsigned int j = 0; j < MET_met->size(); ++j) {
+                        Double32_t pt=MET_met->at(j);
+                        Double32_t eta=0; // MET_eta->at(j);
+                        Double32_t phi=MET_phi->at(j);
+			// missing
                         TLorentzVector l;
-                        double met_pt= met->Pt(); 
-                        double met_phi = met->Phi();
+                        met_pt= pt;
+                        met_phi = phi;
                         // MET below pT jet is not considered
                         if (met_pt<ptJet){
                                 met_pt=0;
                                 met_phi=0;
                         }
-                        l.SetPtEtaPhiM(met_pt, 0, met_phi, 0);
+                        l.SetPtEtaPhiM(met_pt, eta, met_phi, 0);
                         h_met->Fill(met_pt);
                         l.SetPz(0);
                         LParticle p;
                         p.SetP(l);
                         p.SetType(1);
                         missing.push_back(p);
+                        break;
+	};
+
 
         // Print TLorentzVectors for jets
         //std::cout << " Jets:" << std::endl;
-        for (int j = 0; j < jetArray->GetEntries(); ++j) {
-            TLorentzVector* jet = dynamic_cast<TLorentzVector*>(jetArray->At(j));
-            //std::cout << "   Jet " << j << ": (Pt, Eta, Phi, M) = (" << jet->Pt() << ", " << jet->Eta() << ", " << jet->Phi() << ", " << jet->M() << ")" << std::endl;
-
+	for (int j = 0; j < JET_n; ++j) {
+        Double32_t pt=JET_pt->at(j);
+	Double32_t eta=JET_eta->at(j);
+        Double32_t phi=JET_phi->at(j);
+        Double32_t mass=JET_mass->at(j);
+	if (iconfig<8  && (pt< ptJet || abs( eta ) > etaJet) ) continue; 
 	 // fill
          TLorentzVector l;
-         l.SetPtEtaPhiM(jet->Pt(), jet->Eta(), jet->Phi() , jet->M());
-         h_pt_jet->Fill(jet->Pt());
-	 h_eta_jet ->Fill(jet->Eta()); 
+         l.SetPtEtaPhiM(pt, eta, phi ,mass);
+         h_pt_jet->Fill(pt);
+	 h_eta_jet ->Fill(eta); 
 	 LParticle p;
          p.SetP(l);
          jets.push_back(p); // light-flavored jets
          alljets.push_back(p);
-
+	 xsum=xsum+(pt);
+	 nsum=nsum+1;
+	 //cout << pt  << endl;
 	}
 
-        // Print TLorentzVectors for b-jets
-        //std::cout << "  B-Jets:" << std::endl;
-        for (int j = 0; j < bjetArray->GetEntries(); ++j) {
-            TLorentzVector* bjet = dynamic_cast<TLorentzVector*>(bjetArray->At(j));
-            //std::cout << "   B-Jet " << j << ": (Pt, Eta, Phi, M) = (" << bjet->Pt() << ", " << bjet->Eta() << ", " << bjet->Phi() << ", " << bjet->M() << ")" << std::endl;
 
+        for (int j = 0; j < bJET_n; ++j) {
+        Double32_t pt=bJET_pt->at(j);
+        Double32_t eta=bJET_eta->at(j);
+        Double32_t phi=bJET_phi->at(j);
+        Double32_t mass=bJET_mass->at(j);
+        if (iconfig<8  && (pt< ptJet || abs( eta ) > etaJet) ) continue;
          // fill
          TLorentzVector l;
-         l.SetPtEtaPhiM(bjet->Pt(), bjet->Eta(), bjet->Phi() , bjet->M());
-         h_pt_bjet->Fill(bjet->Pt());
-	 h_eta_bjet ->Fill(bjet->Eta()); 
-	 LParticle p;
+         l.SetPtEtaPhiM(pt, eta, phi ,mass);
+         h_pt_bjet->Fill(pt);
+         h_eta_bjet ->Fill(eta);
+         LParticle p;
          p.SetP(l);
          bjets.push_back(p); // b jets
          alljets.push_back(p);
+         //cout << pt  << endl;
+        }
 
-	}
+
+
 
         // Print TLorentzVectors for electrons
         //std::cout << " Electrons:" << std::endl;
-        for (int j = 0; j < electronArray->GetEntries(); ++j) {
-            TLorentzVector* electron = dynamic_cast<TLorentzVector*>(electronArray->At(j));
-            //std::cout << "   Electron " << j << ": (Pt, Eta, Phi, M) = (" << electron->Pt() << ", " << electron->Eta() << ", " << electron->Phi() << ", " << electron->M() << ")" << std::endl;
-
-         // fill
-         TLorentzVector l;
-         l.SetPtEtaPhiM(electron->Pt(), electron->Eta(), electron->Phi() , 0.000510);
-         h_pt_electron->Fill(electron->Pt());
-	 LParticle p;
-         p.SetP(l);
-         electrons.push_back(p); // light-flavored jets
-
+        for (int j = 0; j < EL_n; ++j) {
+        Double32_t pt=EL_pt->at(j);
+        Double32_t eta=EL_eta->at(j);
+        Double32_t phi=EL_phi->at(j);
+        Double32_t mass=0.000510;
+        if (iconfig<8  && (pt< ptLepton || abs( eta  )> etaLep) ) continue; 
+        // fill
+        TLorentzVector l;
+        l.SetPtEtaPhiM(pt,eta, phi, mass);
+        h_pt_electron->Fill(pt);
+        LParticle p;
+        p.SetP(l);
+        electrons.push_back(p); // light-flavored jets
 	}
 
-        // Print TLorentzVectors for muons
-        //std::cout << " Muons:" << std::endl;
-        for (int j = 0; j < muonArray->GetEntries(); ++j) {
-            TLorentzVector* muon = dynamic_cast<TLorentzVector*>(muonArray->At(j));
-            //std::cout << "   Muon " << j << ": (Pt, Eta, Phi, M) = (" << muon->Pt() << ", " << muon->Eta() << ", " << muon->Phi() << ", " << muon->M() << ")" << std::endl;
-         // fill
-         TLorentzVector l;
-         l.SetPtEtaPhiM(muon->Pt(), muon->Eta(), muon->Phi(),0.1057);
-         h_pt_muon->Fill(muon->Pt());
-	 LParticle p;
-         p.SetP(l);
-         muons.push_back(p); // light-flavored jets
 
-	}
 
-        // Print TLorentzVectors for photons
-        //std::cout << " Photons:" << std::endl;
-        for (int j = 0; j < photonArray->GetEntries(); ++j) {
-            TLorentzVector* photon = dynamic_cast<TLorentzVector*>(photonArray->At(j));
-            //std::cout << "   Photon " << j << ": (Pt, Eta, Phi, M) = (" << photon->Pt() << ", " << photon->Eta() << ", " << photon->Phi() << ", " << photon->M() << ")" << std::endl;
-         // fill
-         TLorentzVector l;
-         l.SetPtEtaPhiM(photon->Pt(), photon->Eta(), photon->Phi(),0.0);
-         h_pt_photon->Fill(photon->Pt());
-	 LParticle p;
-         p.SetP(l);
-         photons.push_back(p); // light-flavored jets
-    
-         }
+
+       // Print TLorentzVectors for electrons
+       //std::cout << " Muons:" << std::endl;
+        for (int j = 0; j < MU_n; ++j) {
+        Double32_t pt=MU_pt->at(j);
+        Double32_t eta=MU_eta->at(j);
+        Double32_t phi=MU_phi->at(j);
+        Double32_t mass=0.1057;
+        if (iconfig<8  && (pt< ptLepton || abs( eta  )> etaLep) ) continue;
+        // fill
+        TLorentzVector l;
+        l.SetPtEtaPhiM(pt,eta, phi, mass);
+        h_pt_muon->Fill(pt);
+        LParticle p;
+        p.SetP(l);
+        muons.push_back(p); // light-flavored jets
+        }
+
+
+ 
+	//std::cout << " Photons:" << std::endl;
+        for (int j = 0; j < PH_n; ++j) {
+        Double32_t pt=PH_pt->at(j);
+        Double32_t eta=PH_eta->at(j);
+        Double32_t phi=PH_phi->at(j);
+        Double32_t mass=0.0;
+        if (iconfig<8  && (pt< ptLepton || abs( eta  )> etaLep) ) continue;
+        // fill
+        TLorentzVector l;
+        l.SetPtEtaPhiM(pt,eta, phi, mass);
+        h_pt_photon->Fill(pt);
+        LParticle p;
+        p.SetP(l);
+        photons.push_back(p); // light-flavored jets
+        }
 
 
 
@@ -402,12 +578,18 @@ if (argc != 4) {
                         if (bjets.size()>1)  std::sort(bjets.begin(), bjets.end(), greater<LParticle>() ) ;
                         if (alljets.size()>1)  std::sort(alljets.begin(), alljets.end(), greater<LParticle>() ) ;
 
+			  h_jetN->Fill(jets.size());
+			  h_bjetN->Fill(bjets.size());
+			  h_photonN->Fill(photons.size());
+			  h_muonN->Fill(muons.size());
+			  h_electronN->Fill(electrons.size());
 
                         /************************************************
                          * Event selection
                          ************************************************/
 
                         bool SelectEvent=false;
+
 
 
                         // single lepton trigger pT>60 GeV
@@ -455,11 +637,12 @@ if (argc != 4) {
 
                       // single photon > 150 GeV
                      if (iconfig == 4) {
-                            if (photons.size() < 1) continue;
+                            if (photons.size() >0) {
                             LParticle p1=photons.at(0);
                             TLorentzVector P1=p1.GetP();
-                           if (P1.Perp()>150) SelectEvent=true;
-                        };
+                            if (P1.Perp()>150) SelectEvent=true;
+                            };
+             	    };
 
 
 
@@ -472,38 +655,43 @@ if (argc != 4) {
 
                  // single jet pT> 500 GeV
                  if (iconfig  == 6) {
-                    if (alljets.size() < 1) continue;
-                   LParticle j1=alljets.at(0);
-                   TLorentzVector L1=j1.GetP();
-                   if (L1.Perp()<500) continue;
-                 };
+                   if (alljets.size() >0) { 
+                     LParticle j1=alljets.at(0);
+                     TLorentzVector L1=j1.GetP();
+                     if (L1.Perp()>500) SelectEvent=true;
+                   }
+ 		   };
 
 
 
 
           // multijets. 1 jet above 200 and other 3 above 100 GeV
        if (iconfig == 7) {
-        if (alljets.size() < 4) continue;
+        int II=0;
+        if (alljets.size() >3) { 
         LParticle j1=alljets.at(0);
         TLorentzVector L1=j1.GetP();
-        if (L1.Perp()<200) continue;
+        if (L1.Perp()>200) II++;
 
         LParticle j2=alljets.at(1);
         TLorentzVector L2=j2.GetP();
-        if (L2.Perp()<100) continue;
+        if (L2.Perp()>100) II++;
 
         LParticle j3=alljets.at(2);
         TLorentzVector L3=j3.GetP();
-        if (L3.Perp()<100) continue;
+        if (L3.Perp()>100) II++;
 
         LParticle j4=alljets.at(3);
         TLorentzVector L4=j4.GetP();
-        if (L4.Perp()<100) continue;
+        if (L4.Perp()>100) II++;
+        };
 
-    }
+        if (II>3) SelectEvent=true;
 
-             // main cut to select event
-             if (SelectEvent == false) continue;
+       }
+
+        // main cut to select event
+        if (SelectEvent == false) continue;
 
                           if (photons.size()>0) {
                              LParticle LPP1=photons.at(0);
@@ -512,7 +700,7 @@ if (argc != 4) {
                           }
 
 
-                         h_debug->Fill("Final",1.0);
+                         h_debug->Fill("Selected",1);
 
                         NN++;
 
@@ -536,17 +724,17 @@ if (argc != 4) {
                         m_id=0;
                         m_event=NN;
                         m_run=0;
-                        m_weight=1.0;
 
+                        //cout << met_pt << endl;
 
-			                        // we accept non-empty events only!
-                        if (met_pt==0 && jets.size()==0 && muons.size()==0 && electrons.size() == 0 && photons.size()==0) continue;
+			 // we accept non-empty events only!
+                        if (met_pt==0 && jets.size()==0 && muons.size()==0 && electrons.size() == 0 && photons.size()==0 && bjets.size()==0) continue;
 
                         if (event<nevhisto){
                                 cout << event << " Nr of gamma= " << photons.size() << " e=" << electrons.size() << " mu=" << muons.size() << " jet=" << jets.size() << endl;
                         }
 
-                        // matrix has size:
+			// matrix has size:
                         if (debug) {
 
                                 cout << "# Nr jets=" << jets.size()<< " muons=" <<  muons.size() << " ele=" << electrons.size() << " pho=" << photons.size() << endl;
@@ -571,7 +759,7 @@ if (argc != 4) {
                         };
 
 
-			                        // return rapidity-mass matrix, RMM,  (with zeros)
+                        // return rapidity-mass matrix, RMM,  (with zeros)
                         float** projArray =  projectevent(CMS, maxNumber, maxTypes, missing, jets, bjets, muons, electrons, photons);
 
                         // triangular matrix is a special kind of square matrix.
@@ -629,7 +817,7 @@ if (argc != 4) {
                         for (int i = 0; i < 5; i++) m_multi.push_back( arrayM[i] );
 
 
-			                       int count=0;
+                        int count=0;
                         int non_empty=0;
 
                         // only non-zero events
@@ -686,7 +874,7 @@ if (argc != 4) {
                         delete[] projArray;
 
 
-                        if (non_empty>0) h_debug->Fill("Final NonEmpty",1.0);
+                        if (non_empty>0) h_debug->Fill("Final NonEmpty",1);
 
                         event++;
                         m_tree->Fill();
@@ -707,6 +895,8 @@ if (argc != 4) {
      cout << "Total events =" << ntot << endl;
      cout << "Selected events =" << event  << endl;
 
+
+      cout << "Average jet pT=" << xsum/nsum << endl;
 
       return 0;
 }

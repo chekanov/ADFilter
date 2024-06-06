@@ -1,0 +1,54 @@
+#!/bin/bash
+# All rights reserved.
+
+"exec" "python3" "-Wignore" "$0" "$@"
+
+__version__ = '1.4'
+__author__  = 'Sergei Chekanov  (chakanau@hep.anl.gov)'
+__doc__     = 'Make a file with input ROOT files'
+
+
+import sys
+
+DIR="";
+if len(sys.argv) < 2: 
+   DIR="/data1/EgammaNTUP/2010/"
+if len(sys.argv) ==2:
+   DIR=sys.argv[1]
+
+print ("Generate files from:  "+DIR) 
+
+import os
+def walker (dir,extension):
+  files=[]
+  def walk( dir, process):
+   for f in os.listdir( dir ):
+    fpath = os.path.join( dir, f)
+    if os.path.isdir(fpath) and not os.path.islink(fpath):
+       walk( fpath, process )
+    if os.path.isfile( fpath ):
+       if (extension == "*") : files.append(fpath)
+       if (extension != "*") :
+          if fpath.find(extension)>-1:
+             files.append(fpath)
+       
+  walk(dir,files)
+  return files
+
+# write to file
+list=walker(DIR,"promc")
+
+seen = set()
+for n in list:
+  if n in seen:
+    print ("duplicate:", n) 
+  else:
+    seen.add(n)
+
+
+
+f=open("data.in","w")
+f.write('\n'.join(list))
+f.write('\n')
+f.close()
+print ("data.in is done!") 

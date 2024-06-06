@@ -1,0 +1,51 @@
+#!/bin/bash
+# set up root
+XPWD=`pwd`
+echo $XPWD
+
+URRENT_DIR=`pwd`
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+echo "Process ProMC-> ROOT from $SCRIPT_DIR"
+
+source $SCRIPT_DIR/setup_lcg.sh
+
+echo "Running.."
+#make -f Makefile
+
+INPUT=$1
+
+if [ "$#" -eq 2 ]; then
+        CONFIG=$2
+        echo "Configuration number was set to $CONFIG"
+fi
+
+if [ "$#" -ne 1 ]; then
+        echo "INPUT LHE.lhe.gz  not set"
+fi
+
+
+echo "Input for LHE2PROMC PYTHIA8= $INPUT"
+echo "Output from LHE2PROMC PYTHIA8= $INPUT.promc"
+
+echo "Uncompressing $INPUT"
+
+fullfile=$INPUT
+filename=$(basename -- "$fullfile")
+extension="${filename##*.}"
+filename="${filename%.*}"
+dir_filename=`dirname -- "$INPUT"`;
+
+echo $filename
+echo $dir_filename
+
+OUT_LHE=$dir_filename/$filename
+OUT_PROMC=$dir_filename/$filename".promc"
+
+gunzip -c $INPUT > $OUT_LHE  
+
+$SCRIPT_DIR/main.exe cards/tcolor.py "$OUT_LHE" "$OUT_PROMC"  | tee logfile.txt
+
+#./main.exe cards/tcolor.py $FF1 Pythia8.promc > logfile.txt
+

@@ -1,0 +1,163 @@
+ #include "JetMomentTools/JetEccentricityTool.h"
+002 
+003 #include "JetEvent/Jet.h"
+004 
+005 // Filename: JetEccentricityTool
+006 // Author:   Ben Smith <bcsmith@fas.harvard.edu>
+007 // Created:  May 20, 2009
+008 // See JetEccentricityTool.h for more information
+009 
+010 JetEccentricityTool::JetEccentricityTool( const std::string& type,
+011     const std::string& name,
+012     const IInterface* parent ) 
+013 : JetMomentToolBase(type, name, parent) {
+014   declareInterface<IJetMomentToolBase>( this );
+015   declareInterface<IJetAlgToolBase >( this );
+016 
+017   declareProperty("JetMomentName", m_jm_name = "JetEccentricity");
+018 
+019 }
+020 
+021 JetEccentricityTool::~JetEccentricityTool() {}
+022 
+023 StatusCode JetEccentricityTool::intializeTool() {
+024 
+025   msg( MSG::DEBUG ) << "JetEccentricityTool::initializeTool()" << endreq;
+026 
+027   return StatusCode::SUCCESS;
+028 
+029 }
+030 
+031 StatusCode JetEccentricityTool::process(const Jet *j) {
+032 
+033   // start by gathering the jet constituents
+034   std::vector<HepLorentzVector> clustersOfInterest;
+035 
+036   Jet::constituent_iterator cfirst = j->firstConstituent();
+037   Jet::constituent_iterator clast = j->lastConstituent();
+038 
+039   for(;cfirst!=clast; ++cfirst) {
+040     if(!(*cfirst))
+041       continue;
+042     if((*cfirst)->hlv().e() < 0)
+043       continue;
+044     clustersOfInterest.push_back((*cfirst)->hlv());
+045   }
+046 
+047   // if we have fewer than two constituents, we can't do
+048   // anything, so bail out
+049   if(clustersOfInterest.size() < 2) {
+050     msg( MSG::DEBUG ) << "Have only " << clustersOfInterest.size() << " jet constituents, which is too few" << endreq;
+051     msg( MSG::DEBUG ) << "Bailing out on calculating jet eccentricity" << endreq;
+052     return StatusCode::SUCCESS; 
+053   }
+054 
+055   // gather positions and energies of constituents
+056   unsigned int numClusters = clustersOfInterest.size();
+057   float *phis = new float[numClusters];
+058   float *etas = new float[numClusters];
+059   float *energies = new float[numClusters];
+060 
+061   unsigned int i = 0;
+062 
+063   for(i = 0; i < numClusters; i++) {
+064     phis[i] = 0.;
+065     etas[i] = 0.;
+066     energies[i] = 0.;
+067   }
+068 
+069   // fill the arrays with the eta and phi relative to the jet axis
+070   i = 0;
+071   for(std::vector<HepLorentzVector>::const_iterator iterC = clustersOfInterest.begin(); 
+072       iterC != clustersOfInterest.end(); ++iterC) {
+073 
+074     float phiDiff = iterC->phi() - j->hlv().phi();
+075     if(fabs(phiDiff - 2. * 3.1415) < fabs(phiDiff))
+076       phiDiff -= 2. * 3.1415;
+077     if(fabs(phiDiff + 2. * 3.1415) < fabs(phiDiff))
+078       phiDiff += 2. * 3.1415;
+079 
+080     phis[i] = phiDiff;
+081     etas[i] = iterC->eta() - j->hlv().eta();
+082     energies[i] = iterC->e();
+083 
+084     i++;
+085   }
+086 
+087   // now we have that we have the constituent information, we need to reset
+088   // them to the energy weighted center
+089   float etaSum = 0.;
+090   float phiSum = 0.;
+091   float eTotal = 0.;
+092 
+093   for(i = 0; i < numClusters; i++) {
+094     etaSum += etas[i] * energies[i];
+095     phiSum += phis[i] * energies[i];
+096     eTotal += energies[i];
+097   }
+098   etaSum /= eTotal; phiSum /= eTotal;
+099 
+100   for(i = 0; i < numClusters; i++) {
+101     etas[i] -= etaSum;
+102     phis[i] -= phiSum;
+103   }
+104 
+105   // now do the principle component analysis
+106   float numer = 0.; // = 2 * sum(e_i eta_i phi_i)
+107   float denom = 0.; // = sum(e_i * (phi_i^2 - eta_i^2))
+108 
+109   for(i = 0; i < numClusters; i++) {
+110     numer += 2. * energies[i] * etas[i] * phis[i];
+111     denom += energies[i] * ( phis[i] * phis[i] - etas[i] * etas[i] );
+112   }
+113 
+114   // this is the angle of one of the principle components
+115   // the other is just this plus 90 degrees
+116   float theta = .5 * atan( numer/denom );
+117   float sinTheta = sin(theta);
+118   float cosTheta = cos(theta);
+119   float thetaPrime = theta + 3.1415 / 2.;
+120   float sinThetaPrime = sin(thetaPrime);
+121   float cosThetaPrime = cos(thetaPrime);
+122 
+123 
+124   // calculate the variance on the two axes
+125 
+126   float var1 = 0.;
+127   float var2 = 0.;
+128 
+129   for(i = 0; i < numClusters; i++) {
+130     var1 += energies[i] * ( cosTheta * cosTheta * phis[i] * phis[i] + sinTheta * sinTheta * etas[i] * etas[i]
+131         + 2. * sinTheta * cosTheta * etas[i] * phis[i] );
+132     var2 += energies[i] * ( cosThetaPrime * cosThetaPrime * phis[i] * phis[i] + sinThetaPrime * sinThetaPrime * etas[i] * etas[i]
+133         + 2. * sinThetaPrime * cosThetaPrime * etas[i] * phis[i] );
+134   }
+135 
+136   // figure out which line is the max and which is the min
+137   float varMax = var1;
+138   float varMin = var2;
+139   float thetaMax = theta;
+140   float thetaMin = thetaPrime;
+141 
+142   if(varMax < varMin) {
+143     varMax = var2;
+144     varMin = var1;
+145     thetaMax = thetaPrime;
+146     thetaMin = theta;
+147   }
+148 
+149   // clean up
+150   delete phis;
+151   delete etas;
+152   delete energies;
+153 
+154   // calculate the jet eccentricity
+155   float ecc =  1. - varMin/varMax;
+156 
+157   msg( MSG::DEBUG ) << m_jm_name << " = " << ecc << endreq;
+158 
+159   j->setMoment(m_jm_name, ecc);
+160 
+161   return StatusCode::SUCCESS;
+162 
+163 }

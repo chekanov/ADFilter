@@ -26,17 +26,25 @@ echo "Input file=$INPUT"
 
 RMM_INPUT=$INPUT.root
 
+# for *.promc
 if [ "$my_extension" = "promc" ]; then
   cd $SCRIPT_DIR/Map2RMM/
   $SCRIPT_DIR/Map2RMM/ARUN $INPUT $CONFIG 
 fi
 
+# for *.root
 if [ "$my_extension" =  "root" ]; then
  cd $SCRIPT_DIR/Map2RMM_delphes/
   $SCRIPT_DIR/Map2RMM_delphes/ARUN $INPUT $CONFIG 
   secondString="_root"
   OUTPUT="${INPUT/.root/"$secondString"}"
   RMM_INPUT=$OUTPUT.root
+fi
+
+# for lhe.gz
+if [ "$my_extension" =  "gz" ]; then
+  cd $SCRIPT_DIR/Map2RMM_LHE/
+  $SCRIPT_DIR/Map2RMM_LHE/ARUN $INPUT $CONFIG
 fi
 
 
