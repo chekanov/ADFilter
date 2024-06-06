@@ -524,7 +524,6 @@ if (argc != 4) {
         // fill
         TLorentzVector l;
         l.SetPtEtaPhiM(pt,eta, phi, mass);
-        h_pt_electron->Fill(pt);
         LParticle p;
         p.SetP(l);
         electrons.push_back(p); // light-flavored jets
@@ -544,7 +543,6 @@ if (argc != 4) {
         // fill
         TLorentzVector l;
         l.SetPtEtaPhiM(pt,eta, phi, mass);
-        h_pt_muon->Fill(pt);
         LParticle p;
         p.SetP(l);
         muons.push_back(p); // light-flavored jets
