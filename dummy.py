@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # Create Dummy record for ADFilter
-#   python ./dummy.py --outputlist output.root  --cmsEnergy 13000 
+# python ./dummy.py --outputlist output.root  --cmsEnergy 13000 
+# You should have ROOT with python compiled.
 # S.V.Chekanov (ANL) 
 
 # The necessary import(s):
@@ -145,45 +146,52 @@ def main( filename, cmsENERGY ):
         
         Evt_Weight.clear();
 
+        # define electrons
         N_EL[0] = 1;
         for j in  range(N_EL[0]):
             EL_phi.push_back(0.0)
             EL_eta.push_back(0.0) 
             EL_pt.push_back(100.0) 
 
-        N_MU[0] =1 
+        # define muons
+        N_MU[0] =  1 
         for j in range(N_MU[0]):
             MU_phi.push_back(0.0)
             MU_eta.push_back(0.0)
-            MU_pt.push_back(50.0)
+            MU_pt.push_back(100.0)
 
-        N_PH[0] = 0 
+        # define your photons
+        N_PH[0] = 1 
         for j in range(N_PH[0]):  
             PH_phi.push_back(0.0)
             PH_eta.push_back(0.0)
-            PH_pt.push_back(50.0)
-            PH_e.push_back(50.0)
+            PH_pt.push_back(100.0)
+            PH_e.push_back(0.0)
 
-        N_JET[0] = 2 
+        # define here light-flavour jets
+        N_JET[0] = 1
         for j in range(N_JET[0]):
-            JET_phi.push_back(1*j)
+            JET_phi.push_back(0)
             JET_eta.push_back(0.0)
             JET_pt.push_back(100.0)
             JET_mass.push_back(100.0)
 
+        # define here b-jets
         N_bJET[0] = 1 
         for j in range(N_bJET[0]):
             bJET_phi.push_back(0.0)
             bJET_eta.push_back(0.0)
-            bJET_pt.push_back(50.0)
-            bJET_mass.push_back(50.0)
+            bJET_pt.push_back(100.0)
+            bJET_mass.push_back(100.0)
 
-        N_MET[0] = 1 
+        # define MET. 
+        N_MET[0] = 1 # should be 1 always! 
         for j in range(N_MET[0]):
             MET_phi.push_back(0.0)
             MET_eta.push_back(0.0)
             MET_met.push_back(0.0)
 
+        # define event weight
         Evt_Weight.push_back(1)
         Evt_Weight.push_back(1)
 
@@ -218,7 +226,7 @@ if __name__ == "__main__":
    args = parser.parse_args()
 
    cmsEnergy=13000
-   filename="none"
+   filename="dummy.root"
    if args.outputlist:
             filename=args.outputlist[0] 
    if args.cmsEnergy:
