@@ -43,8 +43,17 @@ if [ "$CONFIG" -eq 0 ]; then
 	python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT}
 fi
 
+if [ "$CONFIG" -eq 1000 ]; then
+        CONFIG=$2
+        echo "Inclusive jets. SM Monete Carlo. S.Chekanov, R.Zhang, Eur. Phys. J. Plus (2024) 139:237"
+        SCRIPT="$SCRIPT_DIR/analysis_root_chunky1000.py"
+        model="median"
+        python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT}
+fi
 
-if [ "$CONFIG" -gt 0 ]; then
+
+
+if [ "$CONFIG" -gt 0 -a "$CONFIG" -lt 10 ]; then
         CONFIG=$2
         echo "Multi-trigger configuration for Run2+Run3"
         SCRIPT="$SCRIPT_DIR/analysis_root_chunky_multitriggers.py"
@@ -54,5 +63,7 @@ if [ "$CONFIG" -gt 0 ]; then
         model="nominal"
 	python $SCRIPT $model $nevents $INPUT  "data100percent" ${TYPE} ${NN_TYPE} ${WORKING_POINT}
 fi
+
+
 
 

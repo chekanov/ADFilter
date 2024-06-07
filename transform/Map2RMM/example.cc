@@ -154,6 +154,7 @@ if (argc != 4) {
         if (iconfig == 5)  cout << "  2 photons with pT>30 GeV trigger" << endl;
         if (iconfig == 6)  cout << "  Single jet with pT>500 GeV trigger" << endl;
         if (iconfig == 7)  cout << "  4 jets with pT>200 GeV and 100 GeV for other 3 jets " << endl;
+        if (iconfig == 1000)  cout << "  Inclusive jets with pT>50 GeV and 2->2 ME at 1 TeV as in S.Chekanov, R.Zhang, Eur. Phys. J. Plus (2024) 139:237 " << endl;
 	cout << "=================== end selection ==================================" << endl;
 
 
@@ -214,7 +215,7 @@ if (argc != 4) {
         TFile * RootFile = new TFile(argv[2], "RECREATE", "Histogram file");
 
 	TH1D * h_debug = new TH1D("EventFlow", "EventFlow", 10, 0, 10.);
-	TH1D * h_cross = new TH1D("cross", "cross,events,lumi", 5, 0, 5.);
+	TH1D * h_cross = new TH1D("cross", "Cross [pb], Lumi [pb-1]", 5, 0, 5.);
         TH1D * h_info = new TH1D("Info", "Info", 10, 0, 10.);
 	TH1D * h_iso = new TH1D("iso_energy", "isolation fraction", 100, 0, 3.0);
 	TH2D * h_proj = new TH2D("projection", "projection", mSize, 0, (double)(mSize), mSize, 0, (double)mSize);
@@ -718,6 +719,13 @@ if (argc != 4) {
                    }
   	          };
 
+		 if (iconfig  == 1000) {
+                   if (alljets.size() >0) {
+                     LParticle j1=alljets.at(0);
+                     TLorentzVector L1=j1.GetP();
+                     if (L1.Perp()>30) SelectEvent=true;
+                   }
+                   };
 
 
           // multijets. 1 jet above 200 and other 3 above 100 GeV
@@ -962,11 +970,11 @@ if (argc != 4) {
 	//double width=h_pt->GetBinWidth(1);
 	double lumi=(double)ntot/xcross;
 	cout << "Lumi for all files  =" << lumi << " pb-1" << endl;
-	h_cross->Fill("Cross section",(double)xcross); // 1
-	h_cross->Fill("Input Events",(double)ntot); // 2
-        h_cross->Fill("Selected Events",(double)event); // 2
-	h_cross->Fill("Lumi [pb]",(double)lumi); // 3
-	h_cross->Fill("Input Files",(double)nfiles);
+	h_cross->Fill("Cross section [pb]",(double)xcross); // 1
+        //h_cross->Fill("Input Events",(double)ntot); // 2
+        //h_cross->Fill("Selected Events",(double)event); // 2
+	h_cross->Fill("Lumi [pb-1]",(double)lumi); // 3
+	//h_cross->Fill("Input Files",(double)nfiles);
 
 
 	RootFile->Write();

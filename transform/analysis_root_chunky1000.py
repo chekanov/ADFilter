@@ -145,7 +145,7 @@ print("--> Loaded model from disk")
 """
 
 
-fj1="models"
+fj1="models_Eur.Phys.J.Plus.2024.139:237"
 loaded_model = tf.keras.models.load_model( fj1 )
 print("--> Loaded model from "+fj1)
 
@@ -177,7 +177,7 @@ IsReadCommonEmptyColumns=1
 # 2 drop columns as found by the current dataframe
 file0=""
 if (IsReadCommonEmptyColumns==1):
-   file0="columns_with_0.txt"
+   file0="models_Eur.Phys.J.Plus.2024.139:237/columns_with_0_10j10b5rest.txt"
 if (IsReadCommonEmptyColumns==2):
    file0=fj1+"columns_with_0.txt"
 print ("Read columns with 0 from ",file0)
@@ -330,13 +330,12 @@ evt=0
 if (len(rfile)<1):
     print("We cannot find any input file! Exit")
     sys.exit()
-# get cross section 
+# get cross section
 cross=rfile[0].Get("cross")
 
 
 for i in range(len(proc)):
    ev=0
-
 
    # initialize
    RMM = np.zeros(shape=(evtINchunk, mSize*mSize))

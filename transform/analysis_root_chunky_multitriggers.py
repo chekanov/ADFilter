@@ -311,50 +311,53 @@ col0=dcol0[dcol0.columns[0]]
 
 
 ka=inLabel[0]
+ka="";
 # z-score 
-h_loss=TH1D("Loss_"+ka,"Loss_"+ka,200,-13, -3)
+h_loss=TH1D("Loss"+ka,"Loss distribution ( ln(Loss) ) "+ka,200,-13, -3)
+h_debug=TH1D("Eventflow"+ka,"Event flow"+ka,10,0,10)
+h_cut=TH1D("LossCut"+ka,"Cut on the ln( Loss )"+ka,200,-13, -3)
 
 binsM = TH1D("bins_m_"+ka, "bins_m_"+ka, len(mjjBins)-1, mjjBins);
 for j in range( len(mjjBins)-1):
        x=mjjBins[j+1]-mjjBins[j];
        binsM.Fill(mjjBins[j]+0.5*x,x);
 
+xka= " mass in GeV (after AR)"
 # masses 
-h1=TH1D("Mjj_"+ka,"Mjj_"+ka, len(mjjBins)-1, mjjBins )
-h2=TH1D("Mbb_"+ka,"Mbb_"+ka, len(mjjBins)-1, mjjBins)
-h3=TH1D("Mjb_"+ka,"Mjb_"+ka, len(mjjBins)-1, mjjBins)
-h4=TH1D("Mee_"+ka,"Mee_"+ka,200,1,401)
-h5=TH1D("Mmm_"+ka,"Mmm_"+ka,200,1,401)
-h6=TH1D("Mje_"+ka,"Mje_"+ka, len(mjjBins)-1, mjjBins)
-h7=TH1D("Mjm_"+ka,"Mjm_"+ka, len(mjjBins)-1, mjjBins)
-h8=TH1D("Mjg_"+ka,"Mjg_"+ka, len(mjjBins)-1, mjjBins)
-h9=TH1D("Mgg_"+ka,"Mgg_"+ka, len(mjjBins)-1, mjjBins)
-h10=TH1D("Mge_"+ka,"Mge_"+ka,len(mjjBins)-1, mjjBins)
-h11=TH1D("Mbg_"+ka,"Mbg_"+ka,len(mjjBins)-1, mjjBins)
-h12=TH1D("Mgm_"+ka,"Mgm_"+ka,len(mjjBins)-1, mjjBins)
-h13=TH1D("Mem_"+ka,"Mem_"+ka,100,1,1001)
-h14=TH1D("Mbe_"+ka,"Mbe_"+ka,len(mjjBins)-1, mjjBins)
-h15=TH1D("Mbm_"+ka,"Mbm_"+ka,len(mjjBins)-1, mjjBins)
+h1=TH1D("Mjj"+ka,"Mjj"+xka, len(mjjBins)-1, mjjBins )
+h2=TH1D("Mbb"+ka,"Mbb"+xka, len(mjjBins)-1, mjjBins)
+h3=TH1D("Mjb"+ka,"Mjb"+xka, len(mjjBins)-1, mjjBins)
+h4=TH1D("Mee"+ka,"Mee"+xka,200,1,401)
+h5=TH1D("Mmm"+ka,"Mmm"+xka,200,1,401)
+h6=TH1D("Mje"+ka,"Mje"+xka, len(mjjBins)-1, mjjBins)
+h7=TH1D("Mjm"+ka,"Mjm"+xka, len(mjjBins)-1, mjjBins)
+h8=TH1D("Mjg"+ka,"Mjg"+xka, len(mjjBins)-1, mjjBins)
+h9=TH1D("Mgg"+ka,"Mgg"+xka, len(mjjBins)-1, mjjBins)
+h10=TH1D("Mge"+ka,"Mge"+xka,len(mjjBins)-1, mjjBins)
+h11=TH1D("Mbg"+ka,"Mbg"+xka,len(mjjBins)-1, mjjBins)
+h12=TH1D("Mgm"+ka,"Mgm"+xka,len(mjjBins)-1, mjjBins)
+h13=TH1D("Mem"+ka,"Mem"+xka,100,1,1001)
+h14=TH1D("Mbe"+ka,"Mbe"+xka,len(mjjBins)-1, mjjBins)
+h15=TH1D("Mbm"+ka,"Mbm"+xka,len(mjjBins)-1, mjjBins)
 
-
+xka= " mass in GeV (before AR)"
 # before NN cut 
-h1b=TH1D("Mjj_b_"+ka,"Mjj_b_"+ka, len(mjjBins)-1, mjjBins )
-h2b=TH1D("Mbb_b_"+ka,"Mbb_b_"+ka, len(mjjBins)-1, mjjBins)
-h3b=TH1D("Mjb_b_"+ka,"Mjb_b_"+ka, len(mjjBins)-1, mjjBins)
-h4b=TH1D("Mee_b_"+ka,"Mee_b_"+ka,200,1,401)
-h5b=TH1D("Mmm_b_"+ka,"Mmm_b_"+ka,200,1,401)
-h6b=TH1D("Mje_b_"+ka,"Mje_b_"+ka, len(mjjBins)-1, mjjBins)
-h7b=TH1D("Mjm_b_"+ka,"Mjm_b_"+ka, len(mjjBins)-1, mjjBins)
-h8b=TH1D("Mjg_b_"+ka,"Mjg_b_"+ka, len(mjjBins)-1, mjjBins)
-h9b=TH1D("Mgg_b_"+ka,"Mgg_b_"+ka, len(mjjBins)-1, mjjBins)
-h10b=TH1D("Mge_b_"+ka,"Mge_b_"+ka,len(mjjBins)-1, mjjBins)
-h11b=TH1D("Mbg_b_"+ka,"Mbg_b_"+ka,len(mjjBins)-1, mjjBins)
-h12b=TH1D("Mgm_b_"+ka,"Mgm_b_"+ka,len(mjjBins)-1, mjjBins)
-h13b=TH1D("Mem_b_"+ka,"Mem_b_"+ka,100,1,1001)
-h14b=TH1D("Mbe_b_"+ka,"Mbe_b_"+ka,len(mjjBins)-1, mjjBins)
-h15b=TH1D("Mbm_b_"+ka,"Mbm_b_"+ka,len(mjjBins)-1, mjjBins)
+h1b=TH1D("Mjj_b"+ka,"Mjj_b"+xka, len(mjjBins)-1, mjjBins )
+h2b=TH1D("Mbb_b"+ka,"Mbb_b"+xka, len(mjjBins)-1, mjjBins)
+h3b=TH1D("Mjb_b"+ka,"Mjb_b"+xka, len(mjjBins)-1, mjjBins)
+h4b=TH1D("Mee_b"+ka,"Mee_b"+xka,200,1,401)
+h5b=TH1D("Mmm_b"+ka,"Mmm_b"+xka,200,1,401)
+h6b=TH1D("Mje_b"+ka,"Mje_b"+xka, len(mjjBins)-1, mjjBins)
+h7b=TH1D("Mjm_b"+ka,"Mjm_b"+xka, len(mjjBins)-1, mjjBins)
+h8b=TH1D("Mjg_b"+ka,"Mjg_b"+xka, len(mjjBins)-1, mjjBins)
+h9b=TH1D("Mgg_b"+ka,"Mgg_b"+xka, len(mjjBins)-1, mjjBins)
+h10b=TH1D("Mge_b"+ka,"Mge_b"+xka,len(mjjBins)-1, mjjBins)
+h11b=TH1D("Mbg_b"+ka,"Mbg_b"+xka,len(mjjBins)-1, mjjBins)
+h12b=TH1D("Mgm_b"+ka,"Mgm_b"+xka,len(mjjBins)-1, mjjBins)
+h13b=TH1D("Mem_b"+ka,"Mem_b"+xka,100,1,1001)
+h14b=TH1D("Mbe_b"+ka,"Mbe_b"+xka,len(mjjBins)-1, mjjBins)
+h15b=TH1D("Mbm_b"+ka,"Mbm_b"+xka,len(mjjBins)-1, mjjBins)
 
-debug=TH1D("debug_"+ka,"debug_"+ka,10,0,10)
 
 ######## scaled by CM energy in GeV 
 CMS_E_GEV=CMS_RUN2 # in  GeV 
@@ -373,6 +376,7 @@ for j in range( len(mjjBinsE)-1):
        binsEM.Fill(mjjBinsE[j]+0.5*x,x);
 
 
+"""
 h1E=TH1D("Mjj_"+ka,"Mjj_"+ka, len(mjjBinsE)-1, mjjBinsE )
 h2E=TH1D("Mbb_"+ka,"Mbb_"+ka, len(mjjBinsE)-1, mjjBinsE)
 h3E=TH1D("Mjb_"+ka,"Mjb_"+ka, len(mjjBinsE)-1, mjjBinsE)
@@ -405,6 +409,7 @@ h12Eb=TH1D("Mgm_b_"+ka,"Mgm_b_"+ka,len(mjjBinsE)-1, mjjBinsE)
 h13Eb=TH1D("Mem_b_"+ka,"Mem_b_"+ka,100,1,1001/CMS_E_GEV)
 h14Eb=TH1D("Mbe_b_"+ka,"Mbe_b_"+ka,len(mjjBinsE)-1, mjjBinsE)
 h15Eb=TH1D("Mbm_b_"+ka,"Mbm_b_"+ka,len(mjjBinsE)-1, mjjBinsE)
+"""
 
 # write AR
 anomr=TH1D("AR","Anomaly Region",4,0,4)
@@ -476,6 +481,7 @@ h15b.Sumw2();
 
 
 ## scaled by CME
+"""
 h1E.Sumw2();
 h2E.Sumw2();
 h3E.Sumw2();
@@ -507,6 +513,8 @@ h12Eb.Sumw2();
 h13Eb.Sumw2();
 h14Eb.Sumw2();
 h15Eb.Sumw2();
+"""
+
 
 # max number of masses to be analysed
 MaxNumberOfMasses=11
@@ -540,6 +548,12 @@ chunk=0
 evt=0
 # scale in GeV
 CMS_E=CMS_RUN2
+
+if (len(rfile)<1):
+    print("We cannot find any input file! Exit")
+    sys.exit()
+# get cross section
+cross=rfile[0].Get("cross")
 
 
 for i in range(len(proc)):
@@ -647,6 +661,7 @@ for i in range(len(proc)):
 
 
        ## after division by 1/sqrt(CM) in GeV. Directly from RMM 
+       """
        h1Eb.Fill( v_mjj, weight )
        h2Eb.Fill( v_mbb, weight )
        h3Eb.Fill( v_mjb, weight )
@@ -659,7 +674,7 @@ for i in range(len(proc)):
        h14Eb.Fill( v_mbe, weight ) # b+e 
        h15Eb.Fill( v_mbm, weight ) # b+mu 
        h11Eb.Fill( v_mbg, weight ) # b+gamma 
-
+       """
 
        # print(v_mje,  v_mjm) 
 
@@ -713,14 +728,15 @@ for i in range(len(proc)):
                             xlog= math.log(xloss) 
                             #print(xlog)
                             h_loss.Fill(xlog, we)
-                            debug.Fill(1)
+                            h_debug.Fill("Input events",1)
+                            h_cut.Fill(CutOutlierMC);
 
                             if (xlog < CutOutlierMC): continue # reject SM using MC outlier 
                             # This is side-band control region -10.10 - 10.0
                             if (workingPoint==-1):
                                                if (xlog >  CutOutlierMC+0.10): continue  
 
-                            debug.Fill(2)
+                            h_debug.Fill("Events in AR",1) 
                             ma=masses[ch]
                             # after SM reject 
                             h1.Fill( ma[0]*CMS_E, we )
@@ -739,6 +755,7 @@ for i in range(len(proc)):
 
                             # division by CM in GEV energy. Taken from RMM
                             # after SM reject
+                            """ 
                             h1E.Fill( ma[0], we )
                             h2E.Fill( ma[1], we )
                             h3E.Fill( ma[2], we )
@@ -751,7 +768,7 @@ for i in range(len(proc)):
                             h14E.Fill( ma[8], we )
                             h15E.Fill( ma[9], we )
                             h11E.Fill( ma[10], we )
-
+                            """
 
                             if save_tree:
                                 process[0] = i
@@ -796,13 +813,15 @@ import os.path
 if (os.path.exists(rootfile) == False):
   print("File=",rootfile," does not exist. Make it")
   hfile=TFile(rootfile,"RECREATE","signatures")
-  debug.Write()
+  h_debug.Write()
   hfile.Close()
 
 
 hfile=TFile(rootfile,"RECREATE","signatures")
-debug.Write()
+h_debug.Write()
 h_loss.Write()
+h_cut.Write()
+cross.Write()
 h1.Write()
 h2.Write()
 h3.Write()
@@ -835,6 +854,7 @@ h13b.Write()
 h14b.Write()
 h15b.Write()
 
+"""
 ## division by CMS in TeV
 h1E.Write()
 h2E.Write()
@@ -867,15 +887,13 @@ h12Eb.Write()
 h13Eb.Write()
 h14Eb.Write()
 h15Eb.Write()
-
-
-
+"""
 
 
 # bins
 binsM.Write()
-binsEM.Write()
-anomr.Write()
+#binsEM.Write()
+#anomr.Write()
 
 # tree
 if save_tree:
