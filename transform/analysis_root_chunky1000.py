@@ -212,7 +212,25 @@ h13=TH1D("Mem"+ka,"e-muon mass in AR"+ka,100,1,1001)
 h14=TH1D("Mbe"+ka,"bjet-e mass in AR"+ka,len(mjjBins)-1, mjjBins)
 h15=TH1D("Mbm"+ka,"bjet-muon in AR"+ka,len(mjjBins)-1, mjjBins)
 
+ka="_cross [pb]";
+h1x=TH1D("Mjj"+ka,"jet-jet mass  in AR"+ka, len(mjjBins)-1, mjjBins )
+h2x=TH1D("Mbb"+ka,"bjet - bjet mass in AR"+ka, len(mjjBins)-1, mjjBins)
+h3x=TH1D("Mjb"+ka,"jet - bjet mass in AR"+ka, len(mjjBins)-1, mjjBins)
+h4x=TH1D("Mee"+ka,"ee mass in AR"+ka,200,1,401)
+h5x=TH1D("Mmm"+ka,"muon-muon mass in AR "+ka,200,1,401)
+h6x=TH1D("Mje"+ka,"jet-e mass in AR"+ka, len(mjjBins)-1, mjjBins)
+h7x=TH1D("Mjm"+ka,"jet-muon mass in AR"+ka, len(mjjBins)-1, mjjBins)
+h8x=TH1D("Mjg"+ka,"jet-gamma mass in AR"+ka, len(mjjBins)-1, mjjBins)
+h9x=TH1D("Mgg"+ka,"gamma-gamma mass in AR"+ka, len(mjjBins)-1, mjjBins)
+h10x=TH1D("Mge"+ka,"gamma-e mass in AR"+ka,len(mjjBins)-1, mjjBins)
+h11x=TH1D("Mbg"+ka,"bjet-gamma mass in AR"+ka,len(mjjBins)-1, mjjBins)
+h12x=TH1D("Mgm"+ka,"gamma-muon mass in AR"+ka,len(mjjBins)-1, mjjBins)
+h13x=TH1D("Mem"+ka,"e-muon mass in AR"+ka,100,1,1001)
+h14x=TH1D("Mbe"+ka,"bjet-e mass in AR"+ka,len(mjjBins)-1, mjjBins)
+h15x=TH1D("Mbm"+ka,"bjet-muon in AR"+ka,len(mjjBins)-1, mjjBins)
 
+
+ka="";
 # before NN cut 
 h1b=TH1D("Mjj_b"+ka,"jet-jet before Autoencoder"+ka, len(mjjBins)-1, mjjBins )
 h2b=TH1D("Mbb_b"+ka,"bjet - bjet before Autoencoder"+ka, len(mjjBins)-1, mjjBins)
@@ -330,8 +348,12 @@ evt=0
 if (len(rfile)<1):
     print("We cannot find any input file! Exit")
     sys.exit()
-# get cross section
+# get cross section 
 cross=rfile[0].Get("cross")
+xcross=cross.GetBinContent(1)
+lumi=cross.GetBinContent(2)
+print(" -> Cross section=",xcross," pb")
+print(" -> Expected luminosity=",lumi," pb-1")
 
 
 for i in range(len(proc)):
@@ -493,6 +515,20 @@ for i in range(len(proc)):
                             h15.Fill( ma[9], we )
                             h11.Fill(ma[10], we )
 
+                            # cross sections
+                            h1x.Fill( ma[0], we )
+                            h2x.Fill( ma[1], we )
+                            h3x.Fill( ma[2], we )
+                            h4x.Fill( ma[3], we )
+                            h5x.Fill( ma[4], we )
+                            # additional masses
+                            h6x.Fill( ma[5], we )
+                            h7x.Fill( ma[6], we  )
+                            h8x.Fill( ma[7], we )
+                            h14x.Fill( ma[8], we )
+                            h15x.Fill( ma[9], we )
+                            h11x.Fill(ma[10], we )
+
                             if save_tree:
                                 process[0] = i
                                 mc_sf[0] = we
@@ -547,6 +583,9 @@ h_debug.Write()
 h_loss.Write()
 h_cut.Write()
 cross.Write()
+
+
+
 h1.Write()
 h2.Write()
 h3.Write()
@@ -562,6 +601,76 @@ h12.Write()
 h13.Write()
 h14.Write()
 h15.Write()
+
+
+
+# cross sections
+h1x.Scale(1.0/lumi)
+h2x.Scale(1.0/lumi)
+h3x.Scale(1.0/lumi)
+h4x.Scale(1.0/lumi)
+h5x.Scale(1.0/lumi)
+h6x.Scale(1.0/lumi)
+h7x.Scale(1.0/lumi)
+h8x.Scale(1.0/lumi)
+h9x.Scale(1.0/lumi)
+h10x.Scale(1.0/lumi)
+h11x.Scale(1.0/lumi)
+h12x.Scale(1.0/lumi)
+h13x.Scale(1.0/lumi)
+h14x.Scale(1.0/lumi)
+h15x.Scale(1.0/lumi)
+
+
+xlab="mass [GeV]"
+ylab="#sigma [pb]"
+h1x.GetXaxis().SetTitle(xlab);
+h1x.GetYaxis().SetTitle(ylab);
+h2x.GetXaxis().SetTitle(xlab);
+h2x.GetYaxis().SetTitle(ylab);
+h3x.GetXaxis().SetTitle(xlab);
+h3x.GetYaxis().SetTitle(ylab);
+h4x.GetXaxis().SetTitle(xlab);
+h4x.GetYaxis().SetTitle(ylab);
+h5x.GetXaxis().SetTitle(xlab);
+h5x.GetYaxis().SetTitle(ylab);
+h6x.GetXaxis().SetTitle(xlab);
+h6x.GetYaxis().SetTitle(ylab);
+h7x.GetXaxis().SetTitle(xlab);
+h7x.GetYaxis().SetTitle(ylab);
+h8x.GetXaxis().SetTitle(xlab);
+h8x.GetYaxis().SetTitle(ylab);
+h9x.GetXaxis().SetTitle(xlab);
+h9x.GetYaxis().SetTitle(ylab);
+h10x.GetXaxis().SetTitle(xlab);
+h10x.GetYaxis().SetTitle(ylab);
+h11x.GetXaxis().SetTitle(xlab);
+h11x.GetYaxis().SetTitle(ylab);
+h12x.GetXaxis().SetTitle(xlab);
+h12x.GetYaxis().SetTitle(ylab);
+h13x.GetXaxis().SetTitle(xlab);
+h13x.GetYaxis().SetTitle(ylab);
+h14x.GetXaxis().SetTitle(xlab);
+h14x.GetYaxis().SetTitle(ylab);
+h15x.GetXaxis().SetTitle(xlab);
+
+h1x.Write()
+h2x.Write()
+h3x.Write()
+h4x.Write()
+h5x.Write()
+h6x.Write()
+h7x.Write()
+h8x.Write()
+h9x.Write()
+h10x.Write()
+h11x.Write()
+h12x.Write()
+h13x.Write()
+h14x.Write()
+h15x.Write()
+
+
 # before
 h1b.Write()
 h2b.Write()
