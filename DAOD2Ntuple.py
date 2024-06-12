@@ -191,8 +191,6 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
             #print(f' >> Jet pt : {jet.pt()} - EMFrac {jet.auxdataConst["float"]("EMFrac")}')
 
         # fill jets
-        N_JET[0]=len(Ljet.keys())
-        N_bJET[0]=len(Bjet.keys())
         for i in Ljet.keys():
              kin=Ljet[i]
              JET_pt.push_back(kin[0]);
@@ -205,9 +203,11 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
              bJET_eta.push_back(kin[1]);
              bJET_phi.push_back(kin[2]);
              bJET_mass.push_back(kin[3]);
+        N_JET[0]=len(JET_pt)
+        N_bJET[0]=len(bJET_pt)
+
 
         electrons = evt.retrieve('xAOD::ElectronContainer', 'Electrons')
-        N_EL[0]=len(electrons)
         for el in electrons:
             topoetcone40=el.auxdataConst["float"]("topoetcone40")
             if (topoetcone40>0):
@@ -217,9 +217,9 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
                     EL_phi.push_back(el.phi())
                     EL_eta.push_back(eta)
                     EL_pt.push_back(pt)
+        N_EL[0]=len(EL_pt)
 
         muons = evt.retrieve('xAOD::MuonContainer', 'Muons')
-        N_MU[0]=len(muons)
         for mu in muons:
             topoetcone40=1; # ph.auxdataConst["float"]("topoetcone40")
             tight=1; # ph.auxdataConst["float"]("muonType")
@@ -231,9 +231,9 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
                  MU_phi.push_back(mu.phi())
                  MU_eta.push_back(eta)
                  MU_pt.push_back(pt)
+        N_MU[0]=len(MU_pt)
 
         photons = evt.retrieve('xAOD::PhotonContainer', 'Photons')
-        N_PH[0]=len(photons)
         for ph in photons:
             topoetcone40=1 # h.auxdataConst["float"]("topoetcone40")
             tight=1 # ph.auxdataConst["float"]("Tight")
@@ -244,14 +244,8 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
                       PH_phi.push_back(ph.phi())
                       PH_eta.push_back(ph.eta())
                       PH_pt.push_back(0.001*ph.pt())
+        N_PH[0]=len(PH_pt)
 
-        #N_MET[0] = 1
-        #for j in range(N_MET[0]):
-        #    MET_phi.push_back(0.0)
-        #    MET_eta.push_back(0.0)
-        #    MET_met.push_back(0.0)
-
-        N_MET[0] = 1
         met = evt.retrieve('xAOD::MissingETContainer', 'MET_Core_AntiKt4EMPFlow')
         for m in met:
               x=0.001*m.mpx()
@@ -261,7 +255,9 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
               MET_phi.push_back(phi )
               MET_eta.push_back(0)
               MET_met.push_back(pt)
-
+        N_MET[0]=len(MET_met)
+    
+        # weights 
         Evt_Weight.push_back(1)
         Evt_Weight.push_back(1)
 
@@ -275,8 +271,8 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     #ntuple.SetDirectory(outputFile);
     outputFile.WriteObject(ntuple,"Ntuple")
     #ntuple.Write()
-    ntuple.Show(1)
-    # Close the output file
+    #ntuple.Show(1)
+    #Close the output file
     outputFile.Close();
 
 
