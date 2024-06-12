@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # Convert DAOD to NTuple 
 # Copyright (C) 2002-2024 CERN for the benefit of the ATLAS collaboration
-# DAOD_PHYS / DAOD_PHYSLITE to Ntuple for ADFilter anomaly detection web
+#
+# The goal of this tool is to convert DAOD_PHYS to Ntuple which can be uploaded
+# to the ADFilter tool: https://mc.hep.anl.gov/asc/adfilter
+# 
 # How to run over DAOD_PHYS:
 #   INPUT="DAOD_PHYS.37222100._000003.pool.root.1" - Can be a comma separated list!
 #   lsetup "asetup Athena,main,latest"
