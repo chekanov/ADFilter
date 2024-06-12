@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 #
 # Create Dummy record for ADFilter
-# python ./dummy.py --outputlist output.root  --cmsEnergy 13000 
-# You should have ROOT with python compiled.
+#   python ./dummy.py --outputlist output.root  --cmsEnergy 13000 
 # S.V.Chekanov (ANL) 
 
 # The necessary import(s):
@@ -12,7 +11,7 @@ from array import array
 
 
 ## C/C++ style main function
-def main( filename, cmsENERGY ):
+def main( filename, cmsENERGY, cross ):
 
     # The name of the application:
     APP_NAME = "dummy"
@@ -109,13 +108,14 @@ def main( filename, cmsENERGY ):
 
     meta = ROOT.TH1F("meta","meta",10,0,10);
     meta.Fill("CMS energy [GeV]",cmsEnergy);
+    meta.Fill("cross section [PB]",cross);
+    meta.SetBinError(1,0)
+    meta.SetBinError(2,0)
     meta.Write();
 
     print("Total number of events=", NEvents)
     for entry in range( NEvents ):
-        if (entry%10 == 0): logger.info( "Processing entry %i" % entry )
-        # Print the properties of the electrons:
-
+        if (entry%100 == 0): logger.info( "Processing entry %i" % entry )
 
         JET_pt.clear(); 
         JET_eta.clear();
@@ -146,52 +146,45 @@ def main( filename, cmsENERGY ):
         
         Evt_Weight.clear();
 
-        # define electrons
         N_EL[0] = 1;
         for j in  range(N_EL[0]):
             EL_phi.push_back(0.0)
             EL_eta.push_back(0.0) 
             EL_pt.push_back(100.0) 
 
-        # define muons
-        N_MU[0] =  1 
+        N_MU[0] =1 
         for j in range(N_MU[0]):
             MU_phi.push_back(0.0)
             MU_eta.push_back(0.0)
-            MU_pt.push_back(100.0)
+            MU_pt.push_back(50.0)
 
-        # define your photons
-        N_PH[0] = 1 
+        N_PH[0] = 0 
         for j in range(N_PH[0]):  
             PH_phi.push_back(0.0)
             PH_eta.push_back(0.0)
-            PH_pt.push_back(100.0)
-            PH_e.push_back(0.0)
+            PH_pt.push_back(50.0)
+            PH_e.push_back(50.0)
 
-        # define here light-flavour jets
-        N_JET[0] = 1
+        N_JET[0] = 2 
         for j in range(N_JET[0]):
-            JET_phi.push_back(0)
+            JET_phi.push_back(1*j)
             JET_eta.push_back(0.0)
             JET_pt.push_back(100.0)
             JET_mass.push_back(100.0)
 
-        # define here b-jets
         N_bJET[0] = 1 
         for j in range(N_bJET[0]):
             bJET_phi.push_back(0.0)
             bJET_eta.push_back(0.0)
-            bJET_pt.push_back(100.0)
-            bJET_mass.push_back(100.0)
+            bJET_pt.push_back(50.0)
+            bJET_mass.push_back(50.0)
 
-        # define MET. 
-        N_MET[0] = 1 # should be 1 always! 
+        N_MET[0] = 1 
         for j in range(N_MET[0]):
             MET_phi.push_back(0.0)
             MET_eta.push_back(0.0)
             MET_met.push_back(0.0)
 
-        # define event weight
         Evt_Weight.push_back(1)
         Evt_Weight.push_back(1)
 
@@ -217,21 +210,27 @@ if __name__ == "__main__":
    import sys
 
    parser = argparse.ArgumentParser(
-       description="Extracts a few basic quantities from the xAOD file and dumps them into a text file")
-   parser.add_argument("--outputlist", help="Optional list of output ROOT files",
+       description="Create a dummy ntuple to demonstrate inputs for ADFilter")
+   parser.add_argument("--outputlist", help="Output ROOT file",
                        nargs='+', action="store", default=False)
-   parser.add_argument("--cmsEnergy", help="Optional CMS energy",
+   parser.add_argument("--cmsEnergy", help="CMS energy in GeV",
+                       nargs='+', action="store", default=False)
+   parser.add_argument("--crossSectionPB", help="Cross section in [pb]",
                        nargs='+', action="store", default=False)
 
    args = parser.parse_args()
 
+   # default variables 
    cmsEnergy=13000
    filename="dummy.root"
+   cross=1.0;
    if args.outputlist:
-            filename=args.outputlist[0] 
+            filename=args.outputlist[0]
    if args.cmsEnergy:
-            print("CMS energy =",args.cmsEnergy[0]);
-            cmsEnergy=float(args.cmsEnergy[0]) 
+            print("CMS energy [GeV] =",args.cmsEnergy[0]);
+            cmsEnergy=float(args.cmsEnergy[0])
+   if args.crossSectionPB:
+            print("Cross section [pb] =",args.crossSectionPB[0]);
+            cross=float(args.crossSectionPB[0])
 
-   sys.exit( main( filename, cmsEnergy  ) )
-
+   sys.exit( main( filename, cmsEnergy, cross  ) )
