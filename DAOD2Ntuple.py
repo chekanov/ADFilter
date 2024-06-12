@@ -271,9 +271,10 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     ifile.Close()
     print("Write the TTree to the output file:",filenameoutput);
     #outputFile.Write("",TFile.kOverwrite)
-    # ntuple.cd()
-    ntuple.SetDirectory(outputFile);
-    ntuple.Write()
+    #ntuple.cd()
+    #ntuple.SetDirectory(outputFile);
+    outputFile.WriteObject(ntuple,"Ntuple")
+    #ntuple.Write()
     ntuple.Show(1)
     # Close the output file
     outputFile.Close();
