@@ -16,7 +16,7 @@ from array import array
 import math
 
 ## The main function
-def main(filenameinput, filenameoutput, cmsEnergy ):
+def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
 
 
@@ -110,6 +110,9 @@ def main(filenameinput, filenameoutput, cmsEnergy ):
 
     meta = ROOT.TH1F("meta","meta",10,0,10);
     meta.Fill("CMS energy [GeV]",cmsEnergy);
+    meta.Fill("cross section [PB]",cross);
+    meta.SetBinError(1,0)
+    meta.SetBinError(2,0)
     meta.Write();
 
      
@@ -268,6 +271,8 @@ def main(filenameinput, filenameoutput, cmsEnergy ):
     ifile.Close()
     print("Write the TTree to the output file:",filenameoutput);
     #outputFile.Write("",TFile.kOverwrite)
+    # ntuple.cd()
+    ntuple.SetDirectory(outputFile);
     ntuple.Write()
     ntuple.Show(1)
     # Close the output file
@@ -282,23 +287,29 @@ if __name__ == "__main__":
        description="Extracts a few basic quantities from the xAOD file and dumps them into a text file")
    parser.add_argument("--outputlist", help="List of output ROOT files",
                        nargs='+', action="store", default=False)
-   parser.add_argument("--cmsEnergy", help="CMS energy",
+   parser.add_argument("--cmsEnergy", help="CMS energy in GeV",
                        nargs='+', action="store", default=False)
    parser.add_argument("--inputlist", help="List of  DAOD_PHYS files",
+                       nargs='+', action="store", default=False)
+   parser.add_argument("--crossSectionPB", help="Cross section in [pb]",
                        nargs='+', action="store", default=False)
 
    args = parser.parse_args()
 
    cmsEnergy=13000
    filename="output.root"
+   cross=1.0;
    if args.outputlist:
             filename=args.outputlist[0]
    if args.inputlist:
             filenameinput=args.inputlist[0]
    if args.cmsEnergy:
-            print("CMS energy =",args.cmsEnergy[0]);
+            print("CMS energy [GeV] =",args.cmsEnergy[0]);
             cmsEnergy=float(args.cmsEnergy[0])
+   if args.crossSectionPB:
+            print("Cross section [pb] =",args.crossSectionPB[0]);
+            cross=float(args.crossSectionPB[0])
 
-   sys.exit( main( filenameinput, filename, cmsEnergy  ) )
+   sys.exit( main( filenameinput, filename, cmsEnergy, cross  ) )
 
 
