@@ -288,16 +288,15 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         # Tight, Medium, Loose, VeryLoose, HighPt, LowPt, 
         # corresponding to the "MuQuality" property set to 0, 1, 2, 3, 4 and 5
         # https://twiki.cern.ch/twiki/bin/view/Atlas/MuonSelectionTool
-        xAOD_Muon_Combined=1 # Combined 
-        xAOD_MuonQuality =1  # Medium ??  
+        xAOD_Muon_Combined=0 # Combined 
+        xAOD_MuonQuality =8  # Medium ??  
         muons = evt.retrieve('xAOD::MuonContainer', conMuons)
         for mu in muons:
             mutype =int(None if not muonType.isAvailable(mu) else muonType(mu))
             quality = ord(None if not muonQuality.isAvailable(mu) else muonQuality(mu))
-            print("Type=",mutype,"Quality=",quality)
+            #print("Type=",mutype,"Quality=",quality)
             #if (quality == xAOD_MuonQuality): #  and mutype == xAOD_Muon_Combined):
-            if (mutype == xAOD_Muon_Combined):
-            #if (quality == xAOD_MuonQuality):
+            if (mutype == xAOD_Muon_Combined and quality == xAOD_MuonQuality):
                pt=MeVtoGeV*mu.pt()
                eta=mu.eta()
                if (pt>PTleptons and abs(eta)<ETAleptons):
