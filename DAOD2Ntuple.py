@@ -6,7 +6,6 @@
 # to the ADFilter tool: https://mc.hep.anl.gov/asc/adfilter
 # 
 # How to run over DAOD_PHYS:
-#   INPUT="DAOD_PHYS.37222100._000003.pool.root.1" - Can be a comma separated list!
 #   lsetup "asetup Athena,main,latest"
 #   python ./DAOD2Ntuple.py  --inputlist DAOD_PHYS.37222100._000003.pool.root.1  --outputlist output.root --cmsEnergy 13000
 #   
@@ -22,20 +21,33 @@ import math
 def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
 
+    MeVtoGeV=0.001
+
+    # typical selection cuts
+    PTleptons=30; # PT of leptons 
+    PTjets=30;    # PT of jets
+    ETAjets=2.4   # Eta of jets
+    ETAleptons=2.4 # Eta of leptons
 
     ifile = ROOT.TFile.Open( filenameinput,  "READ" )
     if not ifile:
         print( "Couldn't open the test input file:", filename )
         return 1
 
+    # counters
+    njets=0
+    nbjets=0
+    nmu=0;
+    nel=0;
+    nph=0
 
     # Make a chain of input files
-    #filelist = ROOT.TChain()
-    #filelist.AddFile(filenameinput)
+    filelist = ROOT.TChain()
+    filelist.AddFile(filenameinput)
     # Read the input file
     evt = ROOT.POOL.TEvent( ROOT.POOL.TEvent.kClassAccess )
-    #evt.readFrom(filelist) 
-    evt.readFrom(ifile)
+    evt.readFrom(filelist) 
+    #evt.readFrom(ifile)
 
     #### ntuple writer ###
     outputFile=ROOT.TFile(filenameoutput, "RECREATE");
@@ -160,19 +172,35 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         # Retrieve the AntiKt4EMPFlowJets jets
         jets = evt.retrieve('xAOD::JetContainer', 'AntiKt4EMPFlowJets')
         # Accessor for the EMFrac of the jet
-        emAcc = ROOT.SG.ConstAccessor('float')('EMFrac')
+        jvtAcc = ROOT.SG.ConstAccessor('float')('Jvt')
         # Accessor for the BTagging link of the jet
         btagAcc = ROOT.SG.ConstAccessor('ElementLink<xAOD::BTaggingContainer>')('btaggingLink')
         # Accessor for the GN2v01_pb of the BTag - see how to use this properly instead of auxdataConst below
         #gnAcc = ROOT.SG.ConstAccessor('float')('GN2v01_pb')
         # Loop over the jets to read the pt and EMFrac for demonstration purposes
 
+        # for muons special treatment 
+        muonQuality = ROOT.SG.ConstAccessor('unsigned char')('quality')
+        muonType = ROOT.SG.ConstAccessor('unsigned short')('muonType')
+
         #https://ftag.docs.cern.ch/recommendations/algs/r22-preliminary/#gn2v01-b-tagging
         fc=0.2
         ft=0.01
         Ljet,Bjet={},{}
         for jet in jets:
-            emFrac = None if not emAcc.isAvailable(jet) else emAcc(jet)
+            jvt = None if not jvtAcc.isAvailable(jet) else jvtAcc(jet)
+
+            timing = jet.auxdataConst["float"]("Timing") 
+            EMfrac = jet.auxdataConst["float"]("EMFrac")     
+            FracSamplingMax = jet.auxdataConst["float"]("FracSamplingMax") 
+
+            pt=MeVtoGeV*jet.pt()
+            eta=jet.eta()
+
+            if (EMfrac>0.95): continue  # need to add more here
+            if (FracSamplingMax>0.99 and abs(eta)<2): continue; #  high Q factor 
+            if (pt<60 and jvt<0.95):                  continue 
+            # b-tagging
             btagInfo = None if not btagAcc.isAvailable(jet) else btagAcc(jet)
             score = None if not btagInfo.isValid() else btagInfo.auxdataConst["float"]("GN2v01_pb") # see if this can be done via gnAcc 
             GN2v01_pb= None if not btagInfo.isValid() else btagInfo.auxdataConst["float"]("GN2v01_pb")
@@ -181,14 +209,13 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
             GN2v01_ptau= None if not btagInfo.isValid() else btagInfo.auxdataConst["float"]("GN2v01_ptau")
             DiscriminantB=math.log(GN2v01_pb / (fc*GN2v01_pc + ft*GN2v01_ptau+(1- fc - ft)*GN2v01_pu))
 
-            pt=0.001*jet.pt()
-            eta=jet.eta()
-            if (pt>30 and abs(eta)<2.5):
+            
+            if (pt>PTjets and abs(eta)<ETAjets):
                if (DiscriminantB>0.82): 
-                   Bjet[jet]=[pt,eta,jet.phi(),0.001*jet.m()] 
+                   Bjet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m()] 
                    #print("Bjet 77%",DiscriminantB);
                else:
-                   Ljet[jet]=[pt,eta,jet.phi(),0.001*jet.m()] 
+                   Ljet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m()] 
             #https://ftag.docs.cern.ch/recommendations/algs/r22-preliminary/#gn2v01-b-tagging
             #print(f' >> Jet pt : {jet.pt()} - EMFrac : {emFrac} - GN2v01_pb : {score}')
             #print(f' >> Jet pt : {jet.pt()} - EMFrac {jet.auxdataConst["float"]("EMFrac")}')
@@ -209,50 +236,62 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         N_JET[0]=len(JET_pt)
         N_bJET[0]=len(bJET_pt)
 
+        njets=njets+N_JET[0]
+        nbjets=nbjets+N_bJET[0]
 
         electrons = evt.retrieve('xAOD::ElectronContainer', 'Electrons')
         for el in electrons:
             topoetcone40=el.auxdataConst["float"]("topoetcone40")
-            if (topoetcone40>0):
-                 pt=0.001*el.pt()
+            tight = ord(el.auxdataConst["char"]("DFCommonElectronsLHTight"))
+            if (topoetcone40>0 and tight>0):
+                 pt=MeVtoGeV*el.pt()
                  eta=el.eta()
-                 if (pt>30 and abs(eta)<2.5):
+                 if (pt>PTleptons and abs(eta)<ETAleptons):
                     EL_phi.push_back(el.phi())
                     EL_eta.push_back(eta)
                     EL_pt.push_back(pt)
         N_EL[0]=len(EL_pt)
+        nel=nel+N_EL[0]
 
+
+        # Tight, Medium, Loose, VeryLoose, HighPt, LowPt, 
+        # corresponding to the "MuQuality" property set to 0, 1, 2, 3, 4 and 5
+        # https://twiki.cern.ch/twiki/bin/view/Atlas/MuonSelectionTool
+        xAOD_Muon_Combined=1 # Combined 
+        xAOD_MuonQuality =3  # Medium ??  
         muons = evt.retrieve('xAOD::MuonContainer', 'Muons')
         for mu in muons:
-            topoetcone40=1; # ph.auxdataConst["float"]("topoetcone40")
-            tight=1; # ph.auxdataConst["float"]("muonType")
-            quality=1; # ph.auxdataConst["float"]("quality")
-            if (topoetcone40>0 and tight>0):
-               pt=0.001*mu.pt()
+            mutype =int(None if not muonType.isAvailable(mu) else muonType(mu))
+            quality = ord(None if not muonQuality.isAvailable(mu) else muonQuality(mu))
+            #print("Type=",mutype,"Quality=",quality)
+            if (quality == xAOD_MuonQuality and mutype == xAOD_Muon_Combined):
+               pt=MeVtoGeV*mu.pt()
                eta=mu.eta()
-               if (pt>30 and abs(eta)<2.5):
+               if (pt>PTleptons and abs(eta)<ETAleptons):
                  MU_phi.push_back(mu.phi())
                  MU_eta.push_back(eta)
                  MU_pt.push_back(pt)
         N_MU[0]=len(MU_pt)
+        nmu=nmu+N_MU[0]
 
         photons = evt.retrieve('xAOD::PhotonContainer', 'Photons')
         for ph in photons:
             topoetcone40=1 # h.auxdataConst["float"]("topoetcone40")
-            tight=1 # ph.auxdataConst["float"]("Tight")
+            tight=ord(ph.auxdataConst["char"]("Tight"))
             if (topoetcone40>0 and tight>0):
-                    pt=0.001*ph.pt()
+                    pt=MeVtoGeV*ph.pt()
                     eta=ph.eta()
-                    if (pt>30 and abs(eta)<2.5): 
+                    if (pt>PTleptons and abs(eta)<ETAleptons): 
                       PH_phi.push_back(ph.phi())
-                      PH_eta.push_back(ph.eta())
-                      PH_pt.push_back(0.001*ph.pt())
+                      PH_eta.push_back(eta)
+                      PH_pt.push_back(pt)
         N_PH[0]=len(PH_pt)
+        nph=nph+N_PH[0]
 
         met = evt.retrieve('xAOD::MissingETContainer', 'MET_Core_AntiKt4EMPFlow')
         for m in met:
-              x=0.001*m.mpx()
-              y=0.001*m.mpy()
+              x=MeVtoGeV*m.mpx()
+              y=MeVtoGeV*m.mpy()
               phi = math.atan2(y, x)
               pt=math.sqrt(x*x+y*y)
               MET_phi.push_back(phi )
@@ -267,7 +306,7 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         # fill ntuple
         ntuple.Fill()
 
-    ifile.Close()
+    #ifile.Close()
     print("Write the TTree to the output file:",filenameoutput);
     #outputFile.Write("",TFile.kOverwrite)
     #ntuple.cd()
@@ -277,7 +316,14 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     #ntuple.Show(1)
     #Close the output file
     outputFile.Close();
-
+    print("",njets)
+    print("Output summary:",njets)
+    print("Nr of light jets=",njets)
+    print("Nr of b-tag jets=",nbjets)
+    print("Nr of electrons =",nel)
+    print("Nr of muons =",nmu)
+    print("Nr of photons =",nph)
+ 
 
 # Run the main() function:
 if __name__ == "__main__":
