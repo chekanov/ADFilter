@@ -31,16 +31,21 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     bTag="GN2v01"
     bTagWP=77;
 
-    print("Input list=",filenameinput) 
+    inputlist=[]
+    for j in filenameinput:
+            inputlist=j.split(",")
+
+    print("Nr of input files=",len(inputlist)) 
     isPHYSLIGHT=False;
-    if (filenameinput.find("PHYSLITE")>-1):
+    for f in filenameinput:
+      if (f.find("PHYSLITE")>-1):
          isPHYSLIGHT=True;
          print("Detected PHYSLITE..")
 
-    ifile = ROOT.TFile.Open( filenameinput,  "READ" )
-    if not ifile:
-        print( "Couldn't open the test input file:", filename )
-        return 1
+    #ifile = ROOT.TFile.Open( filenameinput,  "READ" )
+    #if not ifile:
+    #    print( "Couldn't open the test input file:", filename )
+    #    return 1
 
     # counters
     njets=0
@@ -52,7 +57,8 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
     # Make a chain of input files
     filelist = ROOT.TChain()
-    filelist.AddFile(filenameinput)
+    for f in inputlist: 
+         filelist.AddFile(f.strip())
     # Read the input file
     evt = ROOT.POOL.TEvent( ROOT.POOL.TEvent.kClassAccess )
     evt.readFrom(filelist) 
@@ -365,12 +371,12 @@ if __name__ == "__main__":
    import sys
 
    parser = argparse.ArgumentParser(
-       description="Extracts a few basic quantities from the xAOD file and dumps them into a text file")
+       description="Extracts a few basic quantities from the AOD_PHYS or DAOD_PHYSLIGHT files and dumps them into Ntuple")
    parser.add_argument("--outputlist", help="List of output ROOT files",
                        nargs='+', action="store", default=False)
    parser.add_argument("--cmsEnergy", help="CMS energy in GeV",
                        nargs='+', action="store", default=False)
-   parser.add_argument("--inputlist", help="List of  DAOD_PHYS files",
+   parser.add_argument("--inputlist", help="List of  DAOD_PHYS or DAOD_PHYSLIGHT files. Use comma for separation",
                        nargs='+', action="store", default=False)
    parser.add_argument("--crossSectionPB", help="Cross section in [pb]",
                        nargs='+', action="store", default=False)
@@ -383,7 +389,8 @@ if __name__ == "__main__":
    if args.outputlist:
             filename=args.outputlist[0]
    if args.inputlist:
-            filenameinput=args.inputlist[0]
+            filenameinput=args.inputlist
+            print("Inputs=",filenameinput) 
    if args.cmsEnergy:
             print("CMS energy [GeV] =",args.cmsEnergy[0]);
             cmsEnergy=float(args.cmsEnergy[0])
