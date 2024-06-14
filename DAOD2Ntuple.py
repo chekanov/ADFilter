@@ -210,7 +210,7 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         # Retrieve the AntiKt4EMPFlowJets jets
         jets = evt.retrieve('xAOD::JetContainer', conJets)
         # Accessor for the EMFrac of the jet
-        jvtAcc = ROOT.SG.ConstAccessor('float')('Jvt')
+        #jvtAcc = ROOT.SG.ConstAccessor('float')('Jvt')
         # Accessor for the BTagging link of the jet
         btagAcc = ROOT.SG.ConstAccessor('ElementLink<xAOD::BTaggingContainer>')('btaggingLink')
         # Accessor for the GN2v01_pb of the BTag - see how to use this properly instead of auxdataConst below
@@ -220,15 +220,20 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         # for muons special treatment 
         muonQuality = ROOT.SG.ConstAccessor('unsigned char')('quality')
         muonType = ROOT.SG.ConstAccessor('unsigned short')('muonType')
+        photonISEM =  ROOT.SG.ConstAccessor('unsigned int')('DFCommonPhotonsIsEMTightIsEMValue')
+
+        # for muons
+        muonPrecisionLayers=ROOT.SG.ConstAccessor('unsigned char')('numberOfPrecisionLayers')
+        muonPrecisionHoleLayers=ROOT.SG.ConstAccessor('unsigned char')('numberOfPrecisionHoleLayers')
 
         #https://ftag.docs.cern.ch/recommendations/algs/r22-preliminary/#gn2v01-b-tagging
         fc=0.2
         ft=0.01
         Ljet,Bjet={},{}
         for jet in jets:
-            jvt = None if not jvtAcc.isAvailable(jet) else jvtAcc(jet)
-            timing = jet.auxdataConst["float"]("Timing") 
-            EMfrac = jet.auxdataConst["float"]("EMFrac")     
+            #jvt = None if not jvtAcc.isAvailable(jet) else jvtAcc(jet)
+            #timing = jet.auxdataConst["float"]("Timing") 
+            #EMfrac = jet.auxdataConst["float"]("EMFrac")     
             #FracSamplingMax = jet.auxdataConst["float"]("FracSamplingMax") 
             pt=MeVtoGeV*jet.pt()
             eta=jet.eta()
@@ -277,12 +282,14 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
         electrons = evt.retrieve('xAOD::ElectronContainer', conElectrons)
         for el in electrons:
-            topoetcone40=1
-            if (isPHYSLIGHT==False): topoetcone40=el.auxdataConst["float"]("topoetcone40")
             tight = ord(el.auxdataConst["char"]("DFCommonElectronsLHTight"))
-            if (topoetcone40>0 and tight>0):
-                 pt=MeVtoGeV*el.pt()
-                 eta=el.eta()
+            pt=MeVtoGeV*el.pt()
+            eta=el.eta()
+            ptvarcone30_Nonprompt_All_MaxWeightTTVALooseCone_pt1000=MeVtoGeV*el.auxdataConst["float"]("ptvarcone30_Nonprompt_All_MaxWeightTTVALooseCone_pt1000")
+            topoetcone20=MeVtoGeV*el.auxdataConst["float"]("topoetcone20")
+            # https://twiki.cern.ch/twiki/bin/view/AtlasProtected/RecommendedIsolationWPsRel22
+            Loose_VarRad = (ptvarcone30_Nonprompt_All_MaxWeightTTVALooseCone_pt1000/pt < 0.15 and topoetcone20/pt < 0.2)  
+            if (tight>0 and Loose_VarRad==True):
                  if (pt>PTleptons and abs(eta)<ETAleptons):
                     EL_phi.push_back(el.phi())
                     EL_eta.push_back(eta)
@@ -294,17 +301,33 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         # Tight, Medium, Loose, VeryLoose, HighPt, LowPt, 
         # corresponding to the "MuQuality" property set to 0, 1, 2, 3, 4 and 5
         # https://twiki.cern.ch/twiki/bin/view/Atlas/MuonSelectionTool
+        # https://gitlab.cern.ch/atlas/athena/-/blob/main/Event/xAOD/xAODMuon/xAODMuon/versions/MuonEnums.def
+        # https://gitlab.cern.ch/atlas/athena/-/blob/21.2/PhysicsAnalysis/MuonID/MuonSelectorTools/Root/MuonSelectionTool.cxx
         xAOD_Muon_Combined=0 # Combined 
         xAOD_MuonQuality =8  # Medium ??  
         muons = evt.retrieve('xAOD::MuonContainer', conMuons)
         for mu in muons:
             mutype =int(None if not muonType.isAvailable(mu) else muonType(mu))
             quality = ord(None if not muonQuality.isAvailable(mu) else muonQuality(mu))
+            ptvarcone30_Nonprompt_All_MaxWeightTTVA_pt500=MeVtoGeV*mu.auxdataConst["float"]("ptvarcone30_Nonprompt_All_MaxWeightTTVA_pt500")
+            neflowisol20=MeVtoGeV*mu.auxdataConst["float"]("neflowisol20")
+            pt=MeVtoGeV*mu.pt()
+            eta=mu.eta()
+            #https://twiki.cern.ch/twiki/bin/view/AtlasProtected/RecommendedIsolationWPsRel22
+            PflowLoose_VarRad=(ptvarcone30_Nonprompt_All_MaxWeightTTVA_pt500 + 0.4*neflowisol20)/pt < 0.16
             #print("Type=",mutype,"Quality=",quality)
             #if (quality == xAOD_MuonQuality): #  and mutype == xAOD_Muon_Combined):
-            if (mutype == xAOD_Muon_Combined and quality == xAOD_MuonQuality):
-               pt=MeVtoGeV*mu.pt()
-               eta=mu.eta()
+
+            nprecisionLayers =ord(None if not muonPrecisionLayers.isAvailable(mu) else muonPrecisionLayers(mu))
+            nprecisionHoleLayers =ord(None if not muonPrecisionHoleLayers.isAvailable(mu) else muonPrecisionHoleLayers(mu))
+
+            qOverPsignif=1; # for now
+            # this does not do much since we used xAOD_MuonQuality already
+            isMedium=qOverPsignif < 7 and ( nprecisionLayers > 1 or ( nprecisionLayers == 1 and nprecisionHoleLayers < 2 and abs(eta)<0.1 ) ) 
+            # high pT
+            if (pt>300):
+                        isMedium=isMedium and  nprecisionLayers > 2
+            if (mutype == xAOD_Muon_Combined and quality == xAOD_MuonQuality and PflowLoose_VarRad==True and isMedium==True):
                if (pt>PTleptons and abs(eta)<ETAleptons):
                  MU_phi.push_back(mu.phi())
                  MU_eta.push_back(eta)
@@ -314,14 +337,20 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
         photons = evt.retrieve('xAOD::PhotonContainer', conPhotons)
         for ph in photons:
-            topoetcone40=1 # h.auxdataConst["float"]("topoetcone40")
+            etcone40=MeVtoGeV*ph.auxdataConst["float"]("topoetcone40")
+            ptcone20=MeVtoGeV*ph.auxdataConst["float"]("ptcone20")
             tight=0
             if (isPHYSLIGHT): tight=ord(ph.auxdataConst["char"]("DFCommonPhotonsIsEMTight"))
             else: tight=ord(ph.auxdataConst["char"]("Tight"))
-
-            if (topoetcone40>0 and tight>0):
-                    pt=MeVtoGeV*ph.pt()
-                    eta=ph.eta()
+            pt=MeVtoGeV*ph.pt()
+            eta=ph.eta()
+            # https://twiki.cern.ch/twiki/bin/view/AtlasProtected/RecommendedIsolationWPsRel22
+            calo_iso  = etcone40 - 0.022 * pt; #  - 2.45; // calo iso without pt dependence
+            track_iso = ptcone20 / pt;
+            is_calo_iso  = (calo_iso < 2.45);
+            is_track_iso = (track_iso < 0.05);
+            is_iso       = (is_calo_iso and  is_track_iso);
+            if (tight>0 and is_iso==True):
                     if (pt>PTleptons and abs(eta)<ETAleptons): 
                       PH_phi.push_back(ph.phi())
                       PH_eta.push_back(eta)
