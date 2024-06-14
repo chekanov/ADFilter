@@ -17,6 +17,26 @@ import argparse
 from array import array
 import math
 
+
+import os
+def walker (xdir,extension):
+  files=[]
+  def walk( xdir, process):
+   for f in os.listdir( xdir ):
+    fpath = os.path.join( xdir, f)
+    if os.path.isdir(fpath) and not os.path.islink(fpath):
+       walk( fpath, process )
+    if os.path.isfile( fpath ):
+       if (fpath.endswith("part")): continue
+       if (extension == "*") : files.append(fpath)
+       if (extension != "*") :
+          if fpath.find(extension)>-1:
+             files.append(fpath)
+
+  walk(xdir,files)
+  return files
+
+
 ## The main function
 def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
@@ -58,7 +78,9 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     # Make a chain of input files
     filelist = ROOT.TChain()
     for f in inputlist: 
-         filelist.AddFile(f.strip())
+         x=f.strip()
+         if (len(x)>1):
+            filelist.AddFile(f.strip())
     # Read the input file
     evt = ROOT.POOL.TEvent( ROOT.POOL.TEvent.kClassAccess )
     evt.readFrom(filelist) 
@@ -405,7 +427,7 @@ if __name__ == "__main__":
                        nargs='+', action="store", default=False)
    parser.add_argument("--cmsEnergy", help="CMS energy in GeV",
                        nargs='+', action="store", default=False)
-   parser.add_argument("--inputlist", help="List of  DAOD_PHYS or DAOD_PHYSLIGHT files. Use comma for separation",
+   parser.add_argument("--inputlist", help="List of  DAOD_PHYS or DAOD_PHYSLIGHT files. Use comma for separation. You can also give directory and it will scan all files with .root",
                        nargs='+', action="store", default=False)
    parser.add_argument("--crossSectionPB", help="Cross section in [pb]",
                        nargs='+', action="store", default=False)
@@ -427,6 +449,24 @@ if __name__ == "__main__":
             print("Cross section [pb] =",args.crossSectionPB[0]);
             cross=float(args.crossSectionPB[0])
 
+  
+   if (len(filenameinput) < 1 ):
+                 print("No input list or input directory!")
+                 sys.exit(0)
+ 
+   # if a directir given, make a list 
+   isdir = os.path.isdir( filenameinput[0] )
+   if (isdir):
+            print("Directory is detected... Make a list")
+            xlist=walker(filenameinput[0],"root")
+            xlist.sort()
+            IN=[]
+            s=""
+            for f in xlist:
+                 s=s+","+f
+            IN.append(s)
+            filenameinput=IN
+ 
    sys.exit( main( filenameinput, filename, cmsEnergy, cross  ) )
 
 
