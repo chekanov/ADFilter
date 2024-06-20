@@ -10,10 +10,12 @@ export FASTJET=/cvmfs/sft.cern.ch/lcg/latest/fastjet/3.4.1-5af57/x86_64-el9-gcc1
 
 #ls /cvmfs/sft.cern.ch/lcg/latest/
 
-source /var/www/html/asc/adfilter/transform/Map2RMM/library/ProMCBin/promc/setup.sh
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $SCRIPT_DIR/library/ProMCBin/promc/setup.sh
 
 
-export PYTHIA8=/cvmfs/sft.cern.ch/lcg/latest/MCGenerators/pythia8/311-f5a58/x86_64-el9-gcc11-opt/
+
+export PYTHIA8=/cvmfs/sft.cern.ch/lcg/latest/MCGenerators/pythia8/312-1b262/x86_64-el9-gcc11-opt/
 export PYTHIADIR=$PYTHIA8
 export PYTHIA8DATA=$PYTHIA8/share/Pythia8/xmldoc
 # LHAPDF6 configuration.

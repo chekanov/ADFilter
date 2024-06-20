@@ -13,27 +13,36 @@ export LD_LIBRARY_PATH=./map2rmm/lib/:$LD_LIBRARY_PATH
 
 INPUT=$1
 CONFIG=0
+OUTPUT="/var/www/html/asc/adfilter/tmp/"
 
 if [ "$#" -eq 2 ]; then
         CONFIG=$2
-    	echo "Configuration number was set to $CONFIG" 
-fi
-
-if [ "$#" -ne 2 ]; then
-        echo "Configuration number was set to the default $CONFIG"
+        echo "Configuration number was set to $CONFIG" 
+        echo "Output=$OUTPUT"
 fi
 
 
-secondString="_root"
-OUTPUT="${INPUT/.root/"$secondString"}"
+if [ "$#" -eq 3 ]; then
+        CONFIG=$2
+        OUTPUT=$3
+        echo "Configuration number was set to $CONFIG" 
+        echo "Output directory changed to $OUTPUT"
 
+fi
+
+
+TMPF=$(basename "${INPUT%.*}")
+OUTFILE="$OUTPUT/${TMPF}_rmm.root"
+
+#secondString="_root"
+#OUTFILE="${OUTFILE/.root/"$secondString"}"
 
 echo "Input for Map2RMM= $INPUT"
-echo "Output from Map2RMM= $OUTPUT.root"
+echo "Output from Map2RMM= $OUTFILE"
 
 # Directory with ProMC files from HepSim 
 # Make_input data
 # echo $INPUT > $SCRIPT_DIR/data.in 
 
-$SCRIPT_DIR/example "$INPUT" "$OUTPUT.root" $CONFIG
+$SCRIPT_DIR/example "$INPUT" "$OUTFILE" $CONFIG
 

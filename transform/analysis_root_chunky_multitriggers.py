@@ -79,8 +79,8 @@ tf.config.threading.set_inter_op_parallelism_threads(1)
 print ('Number of arguments:', len(sys.argv), 'arguments.')
 print ('Argument List:', str(sys.argv))
 n = len(sys.argv)
-if (n != 8):
-      print ("No arguments!. Need at least 8 parameters: model, events, input, output, type, nn_type working_point") 
+if (n != 9):
+      print ("No arguments!. Need at least 8 parameters: model, events, input, output, type, nn_type working_point, out_dir") 
       sys.exit()
 
 model=sys.argv[1]
@@ -89,13 +89,15 @@ inputData=sys.argv[3]
 outputData=sys.argv[4]
 # trigger types
 TYPE=sys.argv[5]
-
 #  AE type
 NN_TYPE=sys.argv[6]
 
 workingPoint=-1
 if sys.argv[7] != "SB":
     workingPoint=float(sys.argv[7]) 
+
+# output directory
+outputDir=sys.argv[8]
 
 #
 # load anomaly region AR
@@ -146,9 +148,9 @@ CutOutlierMC=CutOutlier_10PB
 
 
 KSoutfiles=inputData.replace(".root","");
-
-
 rootfile=KSoutfiles+"_ADFilter.root"
+mainfile= os.path.basename( rootfile )
+rootfile=outputDir+"/"+mainfile
 
 
 # move to MC 
@@ -360,8 +362,8 @@ h14x=TH1D("Mbe"+ka,"bjet-e mass in AR"+ka,len(mjjBins)-1, mjjBins)
 h15x=TH1D("Mbm"+ka,"bjet-muon in AR"+ka,len(mjjBins)-1, mjjBins)
 
 
-
-xka= " mass in GeV (before AR)"
+ka=""
+xka=" mass in GeV (before AR)"
 # before NN cut 
 h1b=TH1D("Mjj_b"+ka,"Mjj_b"+xka, len(mjjBins)-1, mjjBins )
 h2b=TH1D("Mbb_b"+ka,"Mbb_b"+xka, len(mjjBins)-1, mjjBins)

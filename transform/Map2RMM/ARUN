@@ -9,27 +9,40 @@ echo "Process ProMC-> ROOT from $SCRIPT_DIR"
 source $SCRIPT_DIR/setup_lcg.sh
 
 export LD_LIBRARY_PATH=$FASTJET/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=./map2rmm/lib/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$SCRIPT_DIR/map2rmm/lib/:$LD_LIBRARY_PATH
 
 INPUT=$1
 CONFIG=0
+OUTPUT="/var/www/html/asc/adfilter/tmp/"
 
 if [ "$#" -eq 2 ]; then
         CONFIG=$2
-    	echo "Configuration number was set to $CONFIG" 
+	echo "Configuration number was set to $CONFIG" 
+        echo "Output=$OUTPUT"
 fi
 
-if [ "$#" -ne 2 ]; then
-        echo "Configuration number was set to the default $CONFIG"
+
+if [ "$#" -eq 3 ]; then
+        CONFIG=$2
+	OUTPUT=$3
+        echo "Configuration number was set to $CONFIG" 
+        echo "Output directory changed to $OUTPUT"
+
 fi
 
 
 echo "Input for Map2RMM= $INPUT"
-echo "Output from Map2RMM= $INPUT.root"
+
+TMPF=$(basename "${INPUT%.*}")
+OUTFILE="$OUTPUT/${TMPF}_rmm.root"
+
+
+echo "Input=$INPUT"
+echo "Output=$OUTFILE"
 
 # Directory with ProMC files from HepSim 
 # Make_input data
 # echo $INPUT > $SCRIPT_DIR/data.in 
 
-./example "$INPUT" "$INPUT.root" $CONFIG
+./example "$INPUT" "$OUTFILE" $CONFIG
 

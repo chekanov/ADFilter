@@ -69,23 +69,25 @@ tf.config.threading.set_inter_op_parallelism_threads(1)
 print ('Number of arguments:', len(sys.argv), 'arguments.')
 print ('Argument List:', str(sys.argv))
 n = len(sys.argv)
-if (n != 6):
-      print ("No arguments!. Need at least 5: model, events, input, output, working_point") 
+if (n != 7):
+      print ("No arguments!. Need at least 6: model, events, input, output, working_point, output_dir") 
       sys.exit()
 
 model=sys.argv[1]
 MaxEvents=int(sys.argv[2]) 
 inputData=sys.argv[3]
 outputData=sys.argv[4]
-
 workingPoint=float(sys.argv[5]) 
+outputDir=sys.argv[6]
 
 # get working points and teh cut on the loss..
 CutOutlierMC=CutOutlier_10PB 
 
 KSoutfiles=inputData.replace(".root","");
-
 rootfile=KSoutfiles+"_ADFilter.root"
+mainfile= os.path.basename( rootfile )
+rootfile=outputDir+"/"+mainfile
+
 
 print("-> Run over max events=",MaxEvents)
 print("-> Use model =",model)

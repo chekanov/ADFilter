@@ -526,7 +526,8 @@ if (argc != 4) {
         // fill
         TLorentzVector l;
         l.SetPtEtaPhiM(pt,eta, phi, mass);
-        LParticle p;
+        h_pt_electron->Fill(pt);
+	LParticle p;
         p.SetP(l);
         electrons.push_back(p); // light-flavored jets
 	}
@@ -545,7 +546,8 @@ if (argc != 4) {
         // fill
         TLorentzVector l;
         l.SetPtEtaPhiM(pt,eta, phi, mass);
-        LParticle p;
+        h_pt_muon->Fill(pt);
+	LParticle p;
         p.SetP(l);
         muons.push_back(p); // light-flavored jets
         }
@@ -598,14 +600,12 @@ if (argc != 4) {
                              LParticle LPP1=muons.at(0);
                              TLorentzVector L=LPP1.GetP();
                              if (L.Perp()>PT_LEPTON_LEAD) SelectEvent=true;
-                             h_pt_muon->Fill(L.Perp());
                           }
 
                         if (electrons.size()>0) {
                              LParticle LPP1=electrons.at(0);
                              TLorentzVector L=LPP1.GetP();
                              if (L.Perp()>PT_LEPTON_LEAD) SelectEvent=true;
-                             h_pt_electron->Fill(L.Perp());
                           }
                         } // iconfig == 0
 
@@ -700,14 +700,9 @@ if (argc != 4) {
         // main cut to select event
         if (SelectEvent == false) continue;
 
-                          if (photons.size()>0) {
-                             LParticle LPP1=photons.at(0);
-                             TLorentzVector L=LPP1.GetP();
-                             h_pt_photon->Fill(L.Perp());
-                          }
 
 
-                         h_debug->Fill("Selected",1);
+                        h_debug->Fill("Selected",1);
 
                         NN++;
 

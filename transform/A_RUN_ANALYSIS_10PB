@@ -1,23 +1,29 @@
 #!/bin/bash
 # S.Chekanov (ANL)
 
-# source ./setup_lxplus.sh
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $SCRIPT_DIR/Map2RMM/setup_lcg.sh
+
+# fix path
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-source $SCRIPT_DIR/Map2RMM/setup_lcg.sh
-#source $SCRIPT_DIR/setup_lxplus.sh
-
 INPUT=$1
-
+OUTPUT="/var/www/html/asc/adfilter/tmp/"
 CONFIG=0
 
 if [ "$#" -eq 2 ]; then
         CONFIG=$2
         echo "Configuration number was set to $CONFIG"
+        echo "Default output directory is $OUTPUT"
+
 fi
 
-if [ "$#" -ne 2 ]; then
-        echo "Configuration number was set to the default $CONFIG"
+if [ "$#" -eq 3 ]; then
+        CONFIG=$2
+        OUTPUT=$3
+        echo "Configuration number was set to $CONFIG"
+        echo "Output directory was changed to $OUTPUT"
+
 fi
 
 
@@ -31,7 +37,9 @@ WORKING_POINT=10
 # nevents=50000 
 nevents=-1
 
-echo "Keras analyses: $INPUT"
+echo "Keras analyses input: $INPUT"
+echo "Script directory=$SCRIPT_DIR"
+echo "Output directory=$OUTPUT"
 
 echo "Process 100%"
 
@@ -40,7 +48,7 @@ if [ "$CONFIG" -eq 0 ]; then
         echo "ATLAS PRL single lepton configuration for Run2"
         SCRIPT="$SCRIPT_DIR/analysis_root_chunky.py"
         model="median"
-	python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT}
+	python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT} $OUTPUT 
 fi
 
 if [ "$CONFIG" -eq 1000 ]; then
@@ -48,7 +56,7 @@ if [ "$CONFIG" -eq 1000 ]; then
         echo "Inclusive jets. SM Monete Carlo. S.Chekanov, R.Zhang, Eur. Phys. J. Plus (2024) 139:237"
         SCRIPT="$SCRIPT_DIR/analysis_root_chunky1000.py"
         model="median"
-        python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT}
+        python $SCRIPT $model $nevents ${INPUT}  "data100percent" ${WORKING_POINT} $OUTPUT 
 fi
 
 
@@ -61,7 +69,7 @@ if [ "$CONFIG" -gt 0 -a "$CONFIG" -lt 10 ]; then
         # one-hot 
         NN_TYPE="HAE_RUN23"
         model="nominal"
-	python $SCRIPT $model $nevents $INPUT  "data100percent" ${TYPE} ${NN_TYPE} ${WORKING_POINT}
+	python $SCRIPT $model $nevents $INPUT  "data100percent" ${TYPE} ${NN_TYPE} ${WORKING_POINT} $OUTPUT 
 fi
 
 

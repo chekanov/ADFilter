@@ -8,15 +8,24 @@ echo "Script location $SCRIPT_DIR"
 
 INPUT=$1
 CONFIG=0
+OUTPUT="/var/www/html/asc/adfilter/tmp/"
+
 
 if [ "$#" -eq 2 ]; then
         CONFIG=$2
         echo "Configuration number was set to $CONFIG"
+        echo "Default output directory is $OUTPUT"
+
 fi
 
-if [ "$#" -ne 2 ]; then
-        echo "Configuration number was set to the default $CONFIG"
+if [ "$#" -eq 3 ]; then
+        CONFIG=$2
+        OUTPUT=$3
+	echo "Configuration number was set to $CONFIG"
+        echo "Output directory was changed to $OUTPUT"
+
 fi
+
 
 
 my_extension="${INPUT##*.}"
@@ -24,31 +33,38 @@ my_extension="${INPUT##*.}"
 
 echo "Input file=$INPUT"
 
-RMM_INPUT=$INPUT.root
+
+TMPF=$(basename "${INPUT%.*}")
+RMM_INPUT=$OUTPUT/${TMPF}_rmm.root
 
 # for *.promc
 if [ "$my_extension" = "promc" ]; then
   cd $SCRIPT_DIR/Map2RMM/
-  $SCRIPT_DIR/Map2RMM/ARUN $INPUT $CONFIG 
+  $SCRIPT_DIR/Map2RMM/ARUN $INPUT $CONFIG $OUTPUT 
 fi
 
 # for *.root
 if [ "$my_extension" =  "root" ]; then
- cd $SCRIPT_DIR/Map2RMM_delphes/
-  $SCRIPT_DIR/Map2RMM_delphes/ARUN $INPUT $CONFIG 
+  cd $SCRIPT_DIR/Map2RMM_delphes/
+  $SCRIPT_DIR/Map2RMM_delphes/ARUN $INPUT $CONFIG $OUTPUT 
   secondString="_root"
-  OUTPUT="${INPUT/.root/"$secondString"}"
-  RMM_INPUT=$OUTPUT.root
+  echo $INPUT
+  TMPF=$(basename "${INPUT%.*}")
+  echo $TMPF
+  #OUTFILE="${TMPF/.root/"$secondString"}"
+  echo $OUTFILE
+  RMM_INPUT="$OUTPUT/${TMPF}_rmm.root"
 fi
 
 # for lhe.gz
 if [ "$my_extension" =  "gz" ]; then
   cd $SCRIPT_DIR/Map2RMM_LHE/
-  $SCRIPT_DIR/Map2RMM_LHE/ARUN $INPUT $CONFIG
+  $SCRIPT_DIR/Map2RMM_LHE/ARUN $INPUT $CONFIG $OUTPUT 
 fi
 
 
 cd $SCRIPT_DIR 
-echo "Process $INPUT.root with Keras.."
-$SCRIPT_DIR/A_RUN_ANALYSIS_10PB $RMM_INPUT $CONFIG
+echo "Process with Keras.."
+echo "RMM INPUT for Keras=$RMM_INPUT"
+$SCRIPT_DIR/A_RUN_ANALYSIS_10PB $RMM_INPUT $CONFIG $OUTPUT 
  

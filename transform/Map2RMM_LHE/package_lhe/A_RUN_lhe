@@ -15,36 +15,38 @@ echo "Running.."
 #make -f Makefile
 
 INPUT=$1
+OUTPUT=$2
 
 if [ "$#" -eq 2 ]; then
         CONFIG=$2
         echo "Configuration number was set to $CONFIG"
 fi
 
-if [ "$#" -ne 1 ]; then
-        echo "INPUT LHE.lhe.gz  not set"
-fi
-
 
 echo "Input for LHE2PROMC PYTHIA8= $INPUT"
-echo "Output from LHE2PROMC PYTHIA8= $INPUT.promc"
+
+TMPF=$(basename "${INPUT%.*}")
+OUTFILE="$OUTPUT/${TMPF}.promc"
+
+echo "Output from LHE2PROMC PYTHIA8= $OUTFILE"
 
 echo "Uncompressing $INPUT"
+#fullfile=$INPUT
+#filename=$(basename -- "$fullfile")
+#extension="${filename##*.}"
+#filename="${filename%.*}"
+#dir_filename=`dirname -- "$INPUT"`;
+#echo $filename
+#echo $dir_filename
 
-fullfile=$INPUT
-filename=$(basename -- "$fullfile")
-extension="${filename##*.}"
-filename="${filename%.*}"
-dir_filename=`dirname -- "$INPUT"`;
+OUT_LHE="$OUTPUT/${TMPF}"
+OUT_PROMC="$OUTPUT/${TMPF}.promc"
 
-echo $filename
-echo $dir_filename
-
-OUT_LHE=$dir_filename/$filename
-OUT_PROMC=$dir_filename/$filename".promc"
-
+echo "Running: gunzip -c $INPUT > $OUT_LHE"
 gunzip -c $INPUT > $OUT_LHE  
 
+
+echo "Running: $SCRIPT_DIR/main.exe cards/tcolor.py $OUT_LHE $OUT_PROMC"
 $SCRIPT_DIR/main.exe cards/tcolor.py "$OUT_LHE" "$OUT_PROMC"  | tee logfile.txt
 
 #./main.exe cards/tcolor.py $FF1 Pythia8.promc > logfile.txt

@@ -10,9 +10,9 @@ export FASTJET=/cvmfs/sft.cern.ch/lcg/latest/fastjet/3.4.1-5af57/x86_64-el9-gcc1
 
 #ls /cvmfs/sft.cern.ch/lcg/latest/
 
-source /var/www/html/asc/adfilter/transform/Map2RMM/library/ProMCBin/promc/setup.sh
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $SCRIPT_DIR/library/ProMCBin/promc/setup.sh
 
-# source /afs/cern.ch/user/c/chekanov/adfilter/transform/Map2RMM/library/ProMCBin/promc/setup.sh 
-
+#source /afs/cern.ch/user/c/chekanov/adfilter/transform/Map2RMM/library/ProMCBin/promc/setup.sh 
 #source  /cvmfs/sft.cern.ch/lcg/latest/fastjet/3.4.1-5af57/x86_64-el9-gcc11-opt/fastjet-env.sh 
 
