@@ -1,0 +1,52 @@
+#!/bin/bash
+# S.Chekanov (ANL)
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+echo "Standalone engine for https://mc.hep.anl.gov/asc/adfilter/"
+#echo "Script location $SCRIPT_DIR"
+
+INPUT=$1
+CONFIG=0
+echo "Input file=$INPUT"
+OUTPUT="/var/www/html/asc/adfilter/tmp/"
+
+show_help() {
+  echo "Usage: $(basename $0) [inputfile] [CONF] [output directory]"
+  echo "Options:"
+  echo "  -h, --help     Display this help message"
+  echo "  -v, --version  Display version information"
+  echo "[CONF] is integer defined as this:" 
+  echo " 0 - for Single leptons pT gt. 60 GeV CM=13 TeV ATLAS, Phys. Rev. Lett. 132, 081801"
+  echo " 1000 - Jets SM MC 2&rarr;2 1 TeV CM=14 TeV  (Eur. Phys. J. Plus (2024) 139:237)"
+  echo " 1 - T1 ATLAS MET"
+  echo " 2 - T2 ATLAS 1l"
+  echo " 3 - T3 ATLAS 2l"
+  echo " 4 - T4 ATLAS 1 gamma"
+  echo " 5 - T5 ATLAS 2 gamma"
+  echo " 6 - T6 ATLAS 1 jet"
+  echo " 7 - T7 ATLAS 4 jet"
+  # Add more options and descriptions as needed
+  exit 0
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  show_help
+fi
+
+if [ "$#" -eq 3 ]; then
+        CONFIG=$2
+        OUTPUT=$3
+        echo "Configuration number was set to $CONFIG"
+        echo "Output directory was changed to $OUTPUT"
+fi
+
+if [ "$#" -ne 3 ]; then
+   show_help
+fi
+
+
+
+
+$SCRIPT_DIR/transform/A_RUN $INPUT $CONFIG $OUTPUT
+
