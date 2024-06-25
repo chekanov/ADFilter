@@ -431,12 +431,15 @@ if __name__ == "__main__":
                        nargs='+', action="store", default=False)
    parser.add_argument("--crossSectionPB", help="Cross section in [pb]",
                        nargs='+', action="store", default=False)
+   parser.add_argument("--nfiles", help="Maximum number of files to process if directory is given",
+                       nargs='+', action="store", default=False)
 
    args = parser.parse_args()
 
    cmsEnergy=13000
    filename="output.root"
    cross=1.0;
+   nfiles=-1;
    if args.outputlist:
             filename=args.outputlist[0]
    if args.inputlist:
@@ -446,8 +449,11 @@ if __name__ == "__main__":
             print("CMS energy [GeV] =",args.cmsEnergy[0]);
             cmsEnergy=float(args.cmsEnergy[0])
    if args.crossSectionPB:
-            print("Cross section [pb] =",args.crossSectionPB[0]);
             cross=float(args.crossSectionPB[0])
+            print("Cross section [pb] =",cross);
+   if args.nfiles:
+            nfiles=int(args.nfiles[0])
+            print("Max files to process =",nfiles);
 
   
    if (len(filenameinput) < 1 ):
@@ -461,12 +467,19 @@ if __name__ == "__main__":
             xlist=walker(filenameinput[0],"root")
             xlist.sort()
             IN=[]
+            XFILES=[]
             s=""
+            n=0;
             for f in xlist:
                  s=s+","+f
+                 n=n+1
+                 if (nfiles>0):
+                    if (n>nfiles): break
+                 XFILES.append(f) 
             IN.append(s)
             filenameinput=IN
- 
+
+   print("We process ",len(XFILES)," files from the total ",len(xlist))
    sys.exit( main( filenameinput, filename, cmsEnergy, cross  ) )
 
 
