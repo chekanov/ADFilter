@@ -18,6 +18,13 @@ from array import array
 import math
 
 
+# fill some histograms
+h_met = ROOT.TH1D("histoMET","MET in GeV",200,0,1000)
+h_pt_lead_jet=ROOT.TH1D("PT_jet_lead","PT lead jet in GeV",200,0,1000)
+h_pt_jets=ROOT.TH1D("PT_jets","PT of all jets  in GeV",200,0,1000)
+h_cutflow=ROOT.TH1D("cutflow","cutflow",10,0,10)
+
+
 import os
 def walker (xdir,extension):
   files=[]
@@ -48,7 +55,7 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     PTjets=30;    # PT of jets
     ETAjets=2.4   # Eta of jets
     ETAleptons=2.4 # Eta of leptons
-    bTag="GN2v01"
+    bTag="DL1dv01"
     bTagWP=77;
 
     inputlist=[]
@@ -81,6 +88,8 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
          x=f.strip()
          if (len(x)>1):
             filelist.AddFile(f.strip())
+            print("Read=",f.strip())
+
     # Read the input file
     evt = ROOT.POOL.TEvent( ROOT.POOL.TEvent.kClassAccess )
     evt.readFrom(filelist) 
@@ -172,14 +181,17 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
     conElectrons='Electrons'
     conMuons='Muons'
     conPhotons='Photons'
-    conMET='MET_Core_AntiKt4EMPFlow' 
+    #conMET='MET_Core_AntiKt4EMPFlow' 
+    conMET='MET_Core'
+    conVertex='PrimaryVertices'
+
     if (isPHYSLIGHT):
         conJets='AnalysisJets'
         conElectrons='AnalysisElectrons'
         conMuons='AnalysisMuons'
         conPhotons='AnalysisPhotons'
         conMET='MET_Core_AnalysisMET'
-        bTag="GN2v00"
+        bTag="DL1dv01"
 
     DescCut=0.82
     if (bTag == 77):
@@ -226,9 +238,15 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
         Evt_Weight.clear();
 
+        h_cutflow.Fill(1)
         if ((idx<100 and idx%10==0) or idx%1000 ==0): print(f'Processing Event #{idx}')
         # Read the current entry
         evt.getEntry(idx)
+
+        # Retrieve primary vertexes 
+        vertexes = evt.retrieve('xAOD::VertexContainer', conVertex)
+        if (len(vertexes)<1): continue # no primary vertex
+        
         # Retrieve the AntiKt4EMPFlowJets jets
         jets = evt.retrieve('xAOD::JetContainer', conJets)
         # Accessor for the EMFrac of the jet
@@ -251,7 +269,7 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         #https://ftag.docs.cern.ch/recommendations/algs/r22-preliminary/#gn2v01-b-tagging
         fc=0.2
         ft=0.01
-        Ljet,Bjet={},{}
+        Ajet,Ljet,Bjet={},{},{}
         for jet in jets:
             #jvt = None if not jvtAcc.isAvailable(jet) else jvtAcc(jet)
             #timing = jet.auxdataConst["float"]("Timing") 
@@ -259,6 +277,12 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
             #FracSamplingMax = jet.auxdataConst["float"]("FracSamplingMax") 
             pt=MeVtoGeV*jet.pt()
             eta=jet.eta()
+            if (pt<PTjets): continue
+
+
+            tight = ord(jet.auxdataConst["char"]("DFCommonJets_jetClean_LooseBad"))
+            loose=  ord(jet.auxdataConst["char"]("DFCommonJets_jetClean_LooseBad")) 
+            if (loose == 0): continue #  pass loose
 
             #if (EMfrac>0.95): continue  # need to add more here
             #if (FracSamplingMax>0.99 and abs(eta)<2): continue; #  high Q factor 
@@ -274,14 +298,38 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
 
             
             if (pt>PTjets and abs(eta)<ETAjets):
+               Ajet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m(),tight,loose] # all jets
+               h_pt_jets.Fill(pt)
                if (DiscriminantB>DescCut): 
-                   Bjet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m()] 
+                   Bjet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m(),tight,loose] 
                    #print("Bjet 77%",DiscriminantB);
                else:
-                   Ljet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m()] 
+                   Ljet[jet]=[pt,eta,jet.phi(),MeVtoGeV*jet.m(),tight,loose] 
             #https://ftag.docs.cern.ch/recommendations/algs/r22-preliminary/#gn2v01-b-tagging
             #print(f' >> Jet pt : {jet.pt()} - EMFrac : {emFrac} - GN2v01_pb : {score}')
             #print(f' >> Jet pt : {jet.pt()} - EMFrac {jet.auxdataConst["float"]("EMFrac")}')
+
+
+
+        # event selection
+        # only take events with at least one high-pT jet
+
+        # sort in decreasing order in PT 
+        Ajet={k: v for k, v in sorted(Ajet.items(), key=lambda item: item[1], reverse=True)}
+        Akeys=list(Ajet.keys())
+
+        take=False
+        if (len(Ajet)>0):
+                    kin=Ajet[Akeys[0]] # take first event 
+                    pt=kin[0]
+                    tight=kin[4]
+                    if (pt>500 and tight>0): 
+                         h_pt_lead_jet.Fill(pt) 
+                         take=True;
+
+        # take high-pT event
+        #if (take== False): continue;
+
 
         # fill jets
         for i in Ljet.keys():
@@ -381,25 +429,40 @@ def main(filenameinput, filenameoutput, cmsEnergy, cross ):
         nph=nph+N_PH[0]
 
         met = evt.retrieve('xAOD::MissingETContainer', conMET)
+
+        metList={}
         for m in met:
               x=MeVtoGeV*m.mpx()
               y=MeVtoGeV*m.mpy()
               phi = math.atan2(y, x)
-              pt=math.sqrt(x*x+y*y)
+              pt=MeVtoGeV*m.sumet()
+              #pt=math.sqrt(x*x+y*y)
               MET_phi.push_back(phi )
               MET_eta.push_back(0)
               MET_met.push_back(pt)
+              h_met.Fill(pt)
+              metList[m]=[pt,phi]
+              break
+
+        
         N_MET[0]=len(MET_met)
-    
+   
         # weights 
         Evt_Weight.push_back(1)
         Evt_Weight.push_back(1)
 
+        h_cutflow.Fill(2)
         # fill ntuple
         ntuple.Fill()
 
+    outputFile.WriteObject(h_cutflow, h_cutflow.GetTitle())
+    outputFile.WriteObject(h_pt_jets, h_pt_jets.GetTitle())
+    outputFile.WriteObject(h_pt_lead_jet, h_pt_lead_jet.GetTitle()) 
+    outputFile.WriteObject(h_met, h_met.GetTitle())
+    #h_met.Write()
     #ifile.Close()
     print("Write the TTree to the output file:",filenameoutput);
+
     #outputFile.Write("",TFile.kOverwrite)
     #ntuple.cd()
     #ntuple.SetDirectory(outputFile);
@@ -481,5 +544,8 @@ if __name__ == "__main__":
 
    print("We process ",len(XFILES)," files from the total ",len(xlist))
    sys.exit( main( filenameinput, filename, cmsEnergy, cross  ) )
+
+
+
 
 
